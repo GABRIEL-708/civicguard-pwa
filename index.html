@@ -1,0 +1,300 @@
+<!DOCTYPE html>
+<html lang="es-MX">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0">
+  <meta http-equiv="X-UA-Compatible" content="ie=edge">
+  
+  <title>CivicGuard - Sistema de Emergencias e Infraestructura Urbana</title>
+  <meta name="description" content="PWA de nivel empresarial para reporte y gestión de incidencias en infraestructura urbana con operatividad 100% offline.">
+  
+  <!-- Configuración PWA y Entorno Móvil -->
+  <link rel="manifest" href="/manifest.json">
+  <meta name="theme-color" content="#10b981">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="CivicGuard">
+  
+  <!-- Iconos -->
+  <link rel="icon" type="image/png" sizes="192x192" href="/assets/icons/icon-192.png">
+  <link rel="apple-touch-icon" href="/assets/icons/icon-192.png">
+  
+  <!-- Estilos del Application Shell -->
+  <link rel="stylesheet" href="/src/styles/shell.css">
+</head>
+<body>
+
+  <!-- 1. BANNER DINÁMICO DE CONECTIVIDAD DE RED -->
+  <div id="network-banner" class="online" role="status" aria-live="polite">
+    <span id="network-status-text">🟢 Conectado a Red Municipal (En Línea)</span>
+  </div>
+
+  <!-- 2. CABECERA INMUTABLE DEL APPLICATION SHELL -->
+  <header class="app-header">
+    <div class="brand-wrapper">
+      <img src="/assets/icons/icon-96.png" alt="Logotipo CivicGuard" class="brand-logo" width="38" height="38">
+      <div>
+        <div style="display: flex; align-items: center;">
+          <h1 class="brand-title">CivicGuard</h1>
+          <span class="brand-badge">UTM PWA</span>
+        </div>
+        <p class="brand-sub">Gestión de Infraestructura Urbana</p>
+      </div>
+    </div>
+    <div class="header-actions">
+      <button id="btn-sync-quick" class="btn-icon" title="Estado de Sincronización" aria-label="Sincronizar">
+        <svg viewBox="0 0 24 24" width="20" height="20" stroke="currentColor" stroke-width="2" fill="none">
+          <path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38l5.67-5.67"/>
+        </svg>
+      </button>
+    </div>
+  </header>
+
+  <!-- CONTENEDOR DE NOTIFICACIONES TOAST -->
+  <div id="toast-container" aria-live="polite"></div>
+
+  <!-- 3. CONTENEDOR PRINCIPAL DE VISTAS (APP SHELL) -->
+  <main class="main-content">
+
+    <!-- VISTA 1: TABLERO DE INCIDENCIAS -->
+    <section id="vista-tablero" class="view-section active">
+      
+      <!-- Panel de Estadísticas de Persistencia Local -->
+      <div class="stats-grid">
+        <div class="stat-card">
+          <span class="stat-label">Total Reportes</span>
+          <span id="stat-total" class="stat-value total">--</span>
+        </div>
+        <div class="stat-card">
+          <span class="stat-label">Retenidos (Offline)</span>
+          <span id="stat-retenidos" class="stat-value retenidos">--</span>
+        </div>
+        <div class="stat-card">
+          <span class="stat-label">Despachados</span>
+          <span id="stat-sincronizados" class="stat-value sincronizados">--</span>
+        </div>
+        <div class="stat-card">
+          <span class="stat-label">Solucionados</span>
+          <span id="stat-resueltos" class="stat-value resueltos">--</span>
+        </div>
+      </div>
+
+      <!-- Barra de Filtros por Categoría -->
+      <nav class="filter-bar" aria-label="Filtro de categorías">
+        <button class="chip-filter active" data-categoria="todos">Todas</button>
+        <button class="chip-filter" data-categoria="bacheo">Bacheo</button>
+        <button class="chip-filter" data-categoria="fuga_agua">Fugas de Agua</button>
+        <button class="chip-filter" data-categoria="luminarias">Luminarias</button>
+        <button class="chip-filter" data-categoria="arbol_caido">Arbolado</button>
+        <button class="chip-filter" data-categoria="semaforos">Semáforos</button>
+      </nav>
+
+      <!-- Lista de Reportes con Placeholders Estructurales Inmutables (Skeletons) -->
+      <div id="lista-reportes" class="report-list" aria-live="polite">
+        <div class="report-card skeleton skeleton-card"></div>
+        <div class="report-card skeleton skeleton-card"></div>
+        <div class="report-card skeleton skeleton-card"></div>
+      </div>
+
+    </section>
+
+    <!-- VISTA 2: FORMULARIO DE NUEVO REPORTE (OPERACIÓN EN CAMPO) -->
+    <section id="vista-nuevo" class="view-section">
+      <div class="form-card">
+        <h2 style="font-size: 1.25rem; font-weight: 800; margin-bottom: 4px; color: #fff;">
+          📝 Registrar Incidencia Urbana
+        </h2>
+        <p style="font-size: 0.82rem; color: var(--text-muted); margin-bottom: 20px;">
+          Operación con soporte offline absoluto. Si no hay red, la información se resguardará de forma transaccional en disco local.
+        </p>
+
+        <form id="form-nuevo-reporte" autocomplete="off">
+          
+          <div class="form-group">
+            <label class="form-label" for="rep-titulo">Título del Incidente *</label>
+            <input type="text" id="rep-titulo" class="form-input" placeholder="Ej. Bache profundo en carril central" required maxlength="120">
+          </div>
+
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+            <div class="form-group">
+              <label class="form-label" for="rep-categoria">Categoría *</label>
+              <select id="rep-categoria" class="form-select" required>
+                <option value="bacheo">Bacheo y Asfalto</option>
+                <option value="fuga_agua">Fuga de Agua / Drenaje</option>
+                <option value="luminarias">Alumbrado Público</option>
+                <option value="arbol_caido">Árbol o Rama Caída</option>
+                <option value="semaforos">Semáforo Averiado</option>
+                <option value="otro">Otro Incidente</option>
+              </select>
+            </div>
+
+            <div class="form-group">
+              <label class="form-label" for="rep-severidad">Nivel de Severidad *</label>
+              <select id="rep-severidad" class="form-select" required>
+                <option value="baja">Baja (Mantenimiento preventivo)</option>
+                <option value="media" selected>Media (Afectación moderada)</option>
+                <option value="alta">Alta (Riesgo vehicular/peatonal)</option>
+                <option value="critica">Crítica (Emergencia inminente)</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label" for="rep-descripcion">Descripción Operativa Detallada *</label>
+            <textarea id="rep-descripcion" class="form-textarea" placeholder="Describa el tamaño, punto de referencia y riesgo potencial..." required></textarea>
+          </div>
+
+          <!-- MÓDULO DE HARDWARE 1: GEOLOCALIZACIÓN SATELITAL -->
+          <div class="hardware-box">
+            <div class="hardware-header">
+              <span class="hardware-title">
+                🛰️ Posicionamiento GNSS (GPS)
+              </span>
+              <button type="button" id="btn-capturar-gps" class="btn-secondary">
+                📍 Adquirir Coordenadas GPS
+              </button>
+            </div>
+            <div id="gps-resultado-info" style="font-size: 0.8rem; color: var(--text-muted); line-height: 1.4;">
+              Coordenadas pendientes de adquisición
+            </div>
+          </div>
+
+          <!-- MÓDULO DE HARDWARE 2: CÁMARA Y EVIDENCIA VISUAL -->
+          <div class="hardware-box">
+            <div class="hardware-header">
+              <span class="hardware-title">
+                📸 Evidencia Fotográfica
+              </span>
+              <div style="display: flex; gap: 8px;">
+                <button type="button" id="btn-iniciar-camara" class="btn-secondary">
+                  📷 Activar Cámara
+                </button>
+                <label for="input-foto-fallback" class="btn-secondary" style="cursor: pointer;" title="Cargar desde galería">
+                  📁 Galería
+                </label>
+                <input type="file" id="input-foto-fallback" accept="image/*" capture="environment" style="display: none;">
+              </div>
+            </div>
+
+            <!-- Visor en Vivo de la Cámara -->
+            <div id="camera-viewport" class="camera-viewport">
+              <video id="camera-stream" class="camera-video" autoplay playsinline muted></video>
+              <div class="camera-controls">
+                <button type="button" id="btn-switch-camara" class="btn-secondary" title="Cambiar Cámara">🔄</button>
+                <button type="button" id="btn-disparar-foto" class="btn-capture" title="Tomar Foto" aria-label="Tomar Fotografía">⚪</button>
+              </div>
+            </div>
+
+            <div id="foto-preview-resultado"></div>
+          </div>
+
+          <button type="submit" id="btn-guardar-reporte" class="btn-primary">
+            💾 Guardar Reporte Cívico
+          </button>
+        </form>
+      </div>
+    </section>
+
+    <!-- VISTA 3: CENTRO DE CONTROL OFFLINE, SYNC Y PUSH -->
+    <section id="vista-sync" class="view-section">
+      <div class="form-card">
+        <h2 style="font-size: 1.25rem; font-weight: 800; margin-bottom: 4px; color: #fff;">
+          ⚙️ Centro de Control de Resiliencia y Red
+        </h2>
+        <p style="font-size: 0.82rem; color: var(--text-muted); margin-bottom: 20px;">
+          Herramientas de auditoría para validar la tolerancia a fallos en Modo Avión, Background Sync y Notificaciones Push.
+        </p>
+
+        <!-- Simulador de Modo Avión -->
+        <div style="background: var(--bg-secondary); border: 1px solid var(--border-color); border-radius: 10px; padding: 14px; margin-bottom: 16px;">
+          <h3 style="font-size: 0.95rem; font-weight: 700; margin-bottom: 6px; color: #fff;">
+            ✈️ Simulador de Entorno Hostil (Modo Avión)
+          </h3>
+          <p style="font-size: 0.8rem; color: var(--text-muted); margin-bottom: 12px;">
+            Simula la desconexión total sin necesidad de apagar el Wi-Fi físico de tu computadora o teléfono.
+          </p>
+          <button type="button" id="btn-toggle-modo-avion" class="btn-secondary" style="width: 100%; justify-content: center; padding: 10px;">
+            ✈️ Simular Modo Avión (Desconectar)
+          </button>
+        </div>
+
+        <!-- Cola de Background Sync -->
+        <div style="background: var(--bg-secondary); border: 1px solid var(--border-color); border-radius: 10px; padding: 14px; margin-bottom: 16px;">
+          <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px;">
+            <h3 style="font-size: 0.95rem; font-weight: 700; color: #fff;">
+              📥 Cola de Sincronización Diferida (IndexedDB)
+            </h3>
+            <button type="button" id="btn-forzar-sync" class="btn-secondary">
+              🚀 Forzar Sync
+            </button>
+          </div>
+          <div id="tabla-cola-sync">
+            <p style="font-size: 0.8rem; color: var(--text-muted);">Cargando registros pendientes...</p>
+          </div>
+        </div>
+
+        <!-- Disparador de Notificaciones Push de Demostración -->
+        <div style="background: var(--bg-secondary); border: 1px solid var(--border-color); border-radius: 10px; padding: 14px; margin-bottom: 16px;">
+          <h3 style="font-size: 0.95rem; font-weight: 700; margin-bottom: 6px; color: #fff;">
+            🔔 Protocolo de Notificaciones Push Nativas
+          </h3>
+          <p style="font-size: 0.8rem; color: var(--text-muted); margin-bottom: 12px;">
+            Prueba la alerta del sistema operativo que avisa al ciudadano cuando su reporte ha sido resuelto.
+          </p>
+          <button type="button" id="btn-demo-push" class="btn-secondary" style="width: 100%; justify-content: center; padding: 10px;">
+            📲 Simular Alerta Push de Reporte Solucionado
+          </button>
+        </div>
+
+        <!-- Ficha de Diagnóstico de PWA -->
+        <div style="background: rgba(16, 185, 129, 0.08); border: 1px solid rgba(16, 185, 129, 0.3); border-radius: 10px; padding: 14px; font-size: 0.8rem; color: #cbd5e1;">
+          <h4 style="font-weight: 700; color: var(--utm-green-light); margin-bottom: 6px;">
+            🛡️ Certificación PWA - UTM Proyecto Integrador 2
+          </h4>
+          <ul style="list-style: none; line-height: 1.6;">
+            <li>• <b>Application Shell:</b> Inmutable y cacheado vía Cache API (FCP &lt; 0.8s)</li>
+            <li>• <b>Persistencia Transaccional:</b> IndexedDB (Cero uso de localStorage)</li>
+            <li>• <b>Sensores Físicos:</b> Geolocation API GNSS + MediaDevices Video/Camera</li>
+            <li>• <b>Segundo Plano:</b> Service Worker con Background Sync + Push</li>
+          </ul>
+        </div>
+
+      </div>
+    </section>
+
+  </main>
+
+  <!-- 4. BARRA DE NAVEGACIÓN INFERIOR (MOBILE SHELL) -->
+  <nav class="bottom-nav" aria-label="Navegación principal">
+    <button class="nav-item active" data-target="vista-tablero">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <rect x="3" y="3" width="7" height="7"></rect>
+        <rect x="14" y="3" width="7" height="7"></rect>
+        <rect x="14" y="14" width="7" height="7"></rect>
+        <rect x="3" y="14" width="7" height="7"></rect>
+      </svg>
+      <span>Tablero</span>
+    </button>
+
+    <button class="nav-item" data-target="vista-nuevo">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <circle cx="12" cy="12" r="10"></circle>
+        <line x1="12" y1="8" x2="12" y2="16"></line>
+        <line x1="8" y1="12" x2="16" y2="12"></line>
+      </svg>
+      <span>Reportar</span>
+    </button>
+
+    <button class="nav-item" data-target="vista-sync">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"/>
+      </svg>
+      <span>Control</span>
+    </button>
+  </nav>
+
+  <!-- SCRIPT PRINCIPAL DE LA APLICACIÓN -->
+  <script type="module" src="/src/app.js"></script>
+</body>
+</html>
