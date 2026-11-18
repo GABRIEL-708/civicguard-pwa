@@ -1,0 +1,2498 @@
+<!DOCTYPE html>
+<html lang="es-MX">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0">
+  <meta http-equiv="X-UA-Compatible" content="ie=edge">
+
+  <title>CivicGuard - Sistema de Emergencias e Infraestructura Urbana</title>
+  <meta name="description"
+    content="PWA de nivel empresarial para reporte y gestión de incidencias en infraestructura urbana con operatividad 100% offline.">
+
+  <!-- Configuración PWA y Entorno Móvil -->
+  <link rel="manifest" href="./manifest.json">
+  <meta name="theme-color" content="#10b981">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="CivicGuard">
+
+  <!-- Iconos -->
+  <link rel="icon" type="image/png" sizes="192x192" href="./assets/icons/icon-192.png">
+  <link rel="apple-touch-icon" href="./assets/icons/icon-192.png">
+
+  <!-- Estilos del Application Shell Inmutables -->
+  <style>
+    /**
+ * Hoja de Estilos del Application Shell Inmutable
+ * CivicGuard PWA - UTM Proyecto Integrador 2
+ */
+
+    :root {
+      --bg-primary: #0b1120;
+      --bg-secondary: #0f172a;
+      --bg-card: #1e293b;
+      --bg-card-hover: #243247;
+      --border-color: #334155;
+      --text-main: #f8fafc;
+      --text-muted: #94a3b8;
+
+      /* Paleta Cívica UTM */
+      --utm-green: #10b981;
+      --utm-green-dark: #059669;
+      --utm-green-light: #34d399;
+
+      /* Estados de Emergencia */
+      --color-critico: #ef4444;
+      --color-alto: #f97316;
+      --color-medio: #eab308;
+      --color-bajo: #3b82f6;
+
+      /* Estados de Sincronización */
+      --status-retenido: #f59e0b;
+      --status-despachado: #06b6d4;
+      --status-resuelto: #10b981;
+
+      --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+      --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.3), 0 2px 4px -2px rgba(0, 0, 0, 0.3);
+      --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.4), 0 4px 6px -4px rgba(0, 0, 0, 0.3);
+      --radius: 12px;
+      --font-sans: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    body {
+      font-family: var(--font-sans);
+      background-color: var(--bg-primary);
+      color: var(--text-main);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      overflow-x: hidden;
+      padding-bottom: 75px;
+      /* Espacio para barra de navegación inferior móvil */
+    }
+
+    /* --- BANNER DE ESTADO DE RED (ONLINE / OFFLINE) --- */
+    #network-banner {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      padding: 8px 16px;
+      font-size: 0.85rem;
+      font-weight: 600;
+      letter-spacing: 0.3px;
+      transition: all 0.3s ease;
+      z-index: 1000;
+    }
+
+    #network-banner.online {
+      background: rgba(16, 185, 129, 0.15);
+      color: var(--utm-green-light);
+      border-bottom: 1px solid rgba(16, 185, 129, 0.3);
+    }
+
+    #network-banner.offline {
+      background: rgba(239, 68, 68, 0.25);
+      color: #fca5a5;
+      border-bottom: 1px solid rgba(239, 68, 68, 0.5);
+      animation: pulseWarning 2s infinite;
+    }
+
+    @keyframes pulseWarning {
+
+      0%,
+      100% {
+        opacity: 1;
+      }
+
+      50% {
+        opacity: 0.8;
+      }
+    }
+
+    /* --- HEADER DEL APP SHELL --- */
+    .app-header {
+      background-color: rgba(15, 23, 42, 0.85);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      border-bottom: 1px solid var(--border-color);
+      position: sticky;
+      top: 0;
+      z-index: 900;
+      padding: 12px 20px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .brand-wrapper {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .brand-logo {
+      width: 38px;
+      height: 38px;
+      border-radius: 10px;
+      box-shadow: 0 0 12px rgba(16, 185, 129, 0.4);
+    }
+
+    .brand-title {
+      font-size: 1.15rem;
+      font-weight: 800;
+      letter-spacing: -0.5px;
+      color: #ffffff;
+    }
+
+    .brand-badge {
+      font-size: 0.65rem;
+      text-transform: uppercase;
+      background: rgba(16, 185, 129, 0.2);
+      color: var(--utm-green-light);
+      padding: 2px 6px;
+      border-radius: 4px;
+      border: 1px solid rgba(16, 185, 129, 0.4);
+      font-weight: 700;
+      margin-left: 6px;
+    }
+
+    .brand-sub {
+      font-size: 0.75rem;
+      color: var(--text-muted);
+    }
+
+    .header-actions {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .btn-icon {
+      background: var(--bg-card);
+      border: 1px solid var(--border-color);
+      color: var(--text-main);
+      width: 36px;
+      height: 36px;
+      border-radius: 8px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.2s;
+    }
+
+    .btn-icon:hover {
+      background: var(--bg-card-hover);
+      border-color: var(--utm-green);
+    }
+
+    /* --- CONTENEDOR PRINCIPAL --- */
+    .main-content {
+      flex: 1;
+      max-width: 900px;
+      width: 100%;
+      margin: 0 auto;
+      padding: 16px;
+    }
+
+    /* --- VISTAS --- */
+    .view-section {
+      display: none;
+      animation: fadeIn 0.25s ease-out;
+    }
+
+    .view-section.active {
+      display: block;
+    }
+
+    @keyframes fadeIn {
+      from {
+        opacity: 0;
+        transform: translateY(6px);
+      }
+
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    /* --- TARJETA DE RESUMEN DE PERSISTENCIA --- */
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+      gap: 10px;
+      margin-bottom: 20px;
+    }
+
+    .stat-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius);
+      padding: 12px;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .stat-label {
+      font-size: 0.75rem;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      font-weight: 600;
+    }
+
+    .stat-value {
+      font-size: 1.6rem;
+      font-weight: 800;
+      margin-top: 4px;
+    }
+
+    .stat-value.total {
+      color: #ffffff;
+    }
+
+    .stat-value.retenidos {
+      color: var(--status-retenido);
+    }
+
+    .stat-value.sincronizados {
+      color: var(--status-despachado);
+    }
+
+    .stat-value.resueltos {
+      color: var(--status-resuelto);
+    }
+
+    /* --- FILTROS Y CONTROLES --- */
+    .filter-bar {
+      display: flex;
+      gap: 8px;
+      overflow-x: auto;
+      padding-bottom: 8px;
+      margin-bottom: 16px;
+      scrollbar-width: none;
+    }
+
+    .filter-bar::-webkit-scrollbar {
+      display: none;
+    }
+
+    .chip-filter {
+      background: var(--bg-card);
+      border: 1px solid var(--border-color);
+      color: var(--text-muted);
+      padding: 6px 14px;
+      border-radius: 20px;
+      font-size: 0.8rem;
+      font-weight: 600;
+      cursor: pointer;
+      white-space: nowrap;
+      transition: all 0.2s;
+    }
+
+    .chip-filter.active,
+    .chip-filter:hover {
+      background: var(--utm-green-dark);
+      color: #ffffff;
+      border-color: var(--utm-green);
+    }
+
+    /* --- LISTA DE REPORTES --- */
+    .report-list {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .report-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius);
+      padding: 16px;
+      transition: transform 0.15s, border-color 0.15s;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      box-shadow: var(--shadow-sm);
+    }
+
+    .report-card:hover {
+      transform: translateY(-2px);
+      border-color: #475569;
+    }
+
+    .card-header-row {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 10px;
+    }
+
+    .card-category-badge {
+      font-size: 0.72rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      padding: 3px 8px;
+      border-radius: 6px;
+      background: rgba(255, 255, 255, 0.08);
+      color: var(--text-muted);
+    }
+
+    .card-status-badge {
+      font-size: 0.72rem;
+      font-weight: 700;
+      padding: 3px 8px;
+      border-radius: 6px;
+      display: flex;
+      align-items: center;
+      gap: 5px;
+    }
+
+    .status-local_retenido {
+      background: rgba(245, 158, 11, 0.18);
+      color: #fbbf24;
+      border: 1px solid rgba(245, 158, 11, 0.4);
+    }
+
+    .status-despachado {
+      background: rgba(6, 182, 212, 0.18);
+      color: #67e8f9;
+      border: 1px solid rgba(6, 182, 212, 0.4);
+    }
+
+    .status-resuelto {
+      background: rgba(16, 185, 129, 0.18);
+      color: #6ee7b7;
+      border: 1px solid rgba(16, 185, 129, 0.4);
+    }
+
+    .card-title {
+      font-size: 1.05rem;
+      font-weight: 700;
+      color: #ffffff;
+      line-height: 1.35;
+    }
+
+    .card-desc {
+      font-size: 0.88rem;
+      color: #cbd5e1;
+      line-height: 1.45;
+    }
+
+    .card-meta-row {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      padding-top: 8px;
+      border-top: 1px solid rgba(255, 255, 255, 0.06);
+      font-size: 0.78rem;
+      color: var(--text-muted);
+    }
+
+    .meta-item {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+    }
+
+    .card-img-preview {
+      width: 100%;
+      max-height: 180px;
+      object-fit: cover;
+      border-radius: 8px;
+      border: 1px solid var(--border-color);
+      margin-top: 6px;
+    }
+
+    /* --- FORMULARIO DE NUEVO REPORTE --- */
+    .form-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius);
+      padding: 20px;
+      box-shadow: var(--shadow-md);
+    }
+
+    .form-group {
+      margin-bottom: 18px;
+    }
+
+    .form-label {
+      display: block;
+      font-size: 0.85rem;
+      font-weight: 600;
+      color: #e2e8f0;
+      margin-bottom: 6px;
+    }
+
+    .form-input,
+    .form-select,
+    .form-textarea {
+      width: 100%;
+      background: var(--bg-secondary);
+      border: 1px solid var(--border-color);
+      border-radius: 8px;
+      padding: 10px 14px;
+      color: var(--text-main);
+      font-family: inherit;
+      font-size: 0.95rem;
+      outline: none;
+      transition: border-color 0.2s;
+    }
+
+    .form-input:focus,
+    .form-select:focus,
+    .form-textarea:focus {
+      border-color: var(--utm-green);
+      box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.2);
+    }
+
+    .form-textarea {
+      resize: vertical;
+      min-height: 85px;
+    }
+
+    /* --- SECCIÓN DE SENSORES DE HARDWARE --- */
+    .hardware-box {
+      background: var(--bg-secondary);
+      border: 1px solid var(--border-color);
+      border-radius: 10px;
+      padding: 14px;
+      margin-bottom: 16px;
+    }
+
+    .hardware-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 10px;
+    }
+
+    .hardware-title {
+      font-size: 0.88rem;
+      font-weight: 700;
+      color: #ffffff;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .btn-secondary {
+      background: #334155;
+      color: #ffffff;
+      border: none;
+      padding: 7px 12px;
+      border-radius: 6px;
+      font-size: 0.8rem;
+      font-weight: 600;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      transition: background 0.2s;
+    }
+
+    .btn-secondary:hover {
+      background: #475569;
+    }
+
+    /* Visor de Video en Vivo de la Cámara */
+    .camera-viewport {
+      position: relative;
+      width: 100%;
+      max-width: 480px;
+      margin: 10px auto;
+      border-radius: 8px;
+      overflow: hidden;
+      background: #000;
+      display: none;
+    }
+
+    .camera-video {
+      width: 100%;
+      height: auto;
+      display: block;
+    }
+
+    .camera-controls {
+      position: absolute;
+      bottom: 10px;
+      left: 0;
+      right: 0;
+      display: flex;
+      justify-content: center;
+      gap: 12px;
+    }
+
+    .btn-capture {
+      background: var(--utm-green);
+      color: #ffffff;
+      border: 3px solid #ffffff;
+      width: 54px;
+      height: 54px;
+      border-radius: 50%;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 0 4px 10px rgba(0, 0, 0, 0.5);
+    }
+
+    .btn-primary {
+      width: 100%;
+      background: linear-gradient(135deg, var(--utm-green), var(--utm-green-dark));
+      color: #ffffff;
+      border: none;
+      padding: 14px 20px;
+      border-radius: 10px;
+      font-size: 1rem;
+      font-weight: 700;
+      cursor: pointer;
+      box-shadow: 0 4px 14px rgba(16, 185, 129, 0.4);
+      transition: transform 0.15s, box-shadow 0.15s;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+    }
+
+    .btn-primary:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 6px 20px rgba(16, 185, 129, 0.5);
+    }
+
+    .btn-primary:active {
+      transform: translateY(0);
+    }
+
+    /* --- BARRA DE NAVEGACIÓN INFERIOR (MOBILE SHELL) --- */
+    .bottom-nav {
+      position: fixed;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      background-color: rgba(15, 23, 42, 0.95);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      border-top: 1px solid var(--border-color);
+      display: flex;
+      justify-content: space-around;
+      padding: 8px 12px;
+      z-index: 900;
+    }
+
+    .nav-item {
+      background: none;
+      border: none;
+      color: var(--text-muted);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 4px;
+      font-size: 0.72rem;
+      font-weight: 600;
+      cursor: pointer;
+      padding: 4px 10px;
+      border-radius: 8px;
+      transition: color 0.2s;
+    }
+
+    .nav-item svg {
+      width: 22px;
+      height: 22px;
+    }
+
+    .nav-item.active {
+      color: var(--utm-green-light);
+    }
+
+    /* --- PLACEHOLDERS INMUTABLES DEL APP SHELL (SKELETONS) --- */
+    .skeleton {
+      background: linear-gradient(90deg, #1e293b 25%, #334155 50%, #1e293b 75%);
+      background-size: 200% 100%;
+      animation: skeletonLoading 1.5s infinite;
+      border-radius: 6px;
+    }
+
+    @keyframes skeletonLoading {
+      0% {
+        background-position: 200% 0;
+      }
+
+      100% {
+        background-position: -200% 0;
+      }
+    }
+
+    .skeleton-text {
+      height: 14px;
+      margin-bottom: 8px;
+      width: 100%;
+    }
+
+    .skeleton-title {
+      height: 20px;
+      width: 60%;
+      margin-bottom: 12px;
+    }
+
+    .skeleton-card {
+      height: 110px;
+      margin-bottom: 12px;
+    }
+
+    /* --- TOAST DE NOTIFICACIÓN DE SISTEMA --- */
+    #toast-container {
+      position: fixed;
+      top: 60px;
+      right: 20px;
+      left: 20px;
+      max-width: 420px;
+      margin: 0 auto;
+      z-index: 2000;
+      pointer-events: none;
+    }
+
+    .toast {
+      background: rgba(30, 41, 59, 0.95);
+      backdrop-filter: blur(10px);
+      border: 1px solid var(--border-color);
+      color: #ffffff;
+      padding: 12px 16px;
+      border-radius: 10px;
+      margin-bottom: 8px;
+      box-shadow: var(--shadow-lg);
+      font-size: 0.88rem;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      pointer-events: auto;
+      animation: slideDown 0.3s ease-out;
+    }
+
+    @keyframes slideDown {
+      from {
+        opacity: 0;
+        transform: translateY(-15px);
+      }
+
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+  </style>
+</head>
+
+<body>
+
+  <!-- 1. BANNER DINÁMICO DE CONECTIVIDAD DE RED -->
+  <div id="network-banner" class="online" role="status" aria-live="polite">
+    <span id="network-status-text">🟢 Conectado a Red Municipal (En Línea)</span>
+  </div>
+
+  <!-- 2. CABECERA INMUTABLE DEL APPLICATION SHELL -->
+  <header class="app-header">
+    <div class="brand-wrapper">
+      <svg class="brand-logo" width="38" height="38" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <rect width="48" height="48" rx="12" fill="#0f172a"/>
+        <rect width="48" height="48" rx="12" stroke="#10b981" stroke-width="2"/>
+        <circle cx="24" cy="24" r="16" fill="#10b981" fill-opacity="0.2"/>
+        <path d="M24 14V34M14 24H34" stroke="#10b981" stroke-width="4" stroke-linecap="round"/>
+        <circle cx="24" cy="24" r="5" fill="#ffffff"/>
+      </svg>
+      <div>
+        <div style="display: flex; align-items: center;">
+          <h1 class="brand-title">CivicGuard</h1>
+          <span class="brand-badge">UTM PWA</span>
+        </div>
+        <p class="brand-sub">Gestión de Infraestructura Urbana</p>
+      </div>
+    </div>
+    <div class="header-actions">
+      <button id="btn-instalar-header" class="btn-secondary" style="display: none; padding: 6px 12px; font-size: 0.78rem; background: var(--utm-green); border: none; font-weight: 700;" title="Instalar Aplicación en este dispositivo">
+        📥 Instalar App
+      </button>
+      <button id="btn-sync-quick" class="btn-icon" title="Estado de Sincronización" aria-label="Sincronizar">
+        <svg viewBox="0 0 24 24" width="20" height="20" stroke="currentColor" stroke-width="2" fill="none">
+          <path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38l5.67-5.67" />
+        </svg>
+      </button>
+    </div>
+  </header>
+
+  <!-- CONTENEDOR DE NOTIFICACIONES TOAST -->
+  <div id="toast-container" aria-live="polite"></div>
+
+  <!-- 3. CONTENEDOR PRINCIPAL DE VISTAS (APP SHELL) -->
+  <main class="main-content">
+
+    <!-- VISTA 1: TABLERO DE INCIDENCIAS -->
+    <section id="vista-tablero" class="view-section active">
+
+      <!-- Panel de Estadísticas de Persistencia Local -->
+      <div class="stats-grid">
+        <div class="stat-card">
+          <span class="stat-label">Total Reportes</span>
+          <span id="stat-total" class="stat-value total">--</span>
+        </div>
+        <div class="stat-card">
+          <span class="stat-label">Retenidos (Offline)</span>
+          <span id="stat-retenidos" class="stat-value retenidos">--</span>
+        </div>
+        <div class="stat-card">
+          <span class="stat-label">Despachados</span>
+          <span id="stat-sincronizados" class="stat-value sincronizados">--</span>
+        </div>
+        <div class="stat-card">
+          <span class="stat-label">Solucionados</span>
+          <span id="stat-resueltos" class="stat-value resueltos">--</span>
+        </div>
+      </div>
+
+      <!-- Barra de Filtros por Categoría -->
+      <nav class="filter-bar" aria-label="Filtro de categorías">
+        <button class="chip-filter active" data-categoria="todos">Todas</button>
+        <button class="chip-filter" data-categoria="bacheo">Bacheo</button>
+        <button class="chip-filter" data-categoria="fuga_agua">Fugas de Agua</button>
+        <button class="chip-filter" data-categoria="luminarias">Luminarias</button>
+        <button class="chip-filter" data-categoria="arbol_caido">Arbolado</button>
+        <button class="chip-filter" data-categoria="semaforos">Semáforos</button>
+      </nav>
+
+      <!-- Lista de Reportes con Placeholders Estructurales Inmutables (Skeletons) -->
+      <div id="lista-reportes" class="report-list" aria-live="polite">
+        <div class="report-card skeleton skeleton-card"></div>
+        <div class="report-card skeleton skeleton-card"></div>
+        <div class="report-card skeleton skeleton-card"></div>
+      </div>
+
+    </section>
+
+    <!-- VISTA 2: FORMULARIO DE NUEVO REPORTE (OPERACIÓN EN CAMPO) -->
+    <section id="vista-nuevo" class="view-section">
+      <div class="form-card">
+        <h2 style="font-size: 1.25rem; font-weight: 800; margin-bottom: 4px; color: #fff;">
+          📝 Registrar Incidencia Urbana
+        </h2>
+        <p style="font-size: 0.82rem; color: var(--text-muted); margin-bottom: 20px;">
+          Operación con soporte offline absoluto. Si no hay red, la información se resguardará de forma transaccional en
+          disco local.
+        </p>
+
+        <form id="form-nuevo-reporte" autocomplete="off">
+
+          <div class="form-group">
+            <label class="form-label" for="rep-titulo">Título del Incidente *</label>
+            <input type="text" id="rep-titulo" class="form-input" placeholder="Ej. Bache profundo en carril central"
+              required maxlength="120">
+          </div>
+
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+            <div class="form-group">
+              <label class="form-label" for="rep-categoria">Categoría *</label>
+              <select id="rep-categoria" class="form-select" required>
+                <option value="bacheo">Bacheo y Asfalto</option>
+                <option value="fuga_agua">Fuga de Agua / Drenaje</option>
+                <option value="luminarias">Alumbrado Público</option>
+                <option value="arbol_caido">Árbol o Rama Caída</option>
+                <option value="semaforos">Semáforo Averiado</option>
+                <option value="otro">Otro Incidente</option>
+              </select>
+            </div>
+
+            <div class="form-group">
+              <label class="form-label" for="rep-severidad">Nivel de Severidad *</label>
+              <select id="rep-severidad" class="form-select" required>
+                <option value="baja">Baja (Mantenimiento preventivo)</option>
+                <option value="media" selected>Media (Afectación moderada)</option>
+                <option value="alta">Alta (Riesgo vehicular/peatonal)</option>
+                <option value="critica">Crítica (Emergencia inminente)</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label" for="rep-descripcion">Descripción Operativa Detallada *</label>
+            <textarea id="rep-descripcion" class="form-textarea"
+              placeholder="Describa el tamaño, punto de referencia y riesgo potencial..." required></textarea>
+          </div>
+
+          <!-- MÓDULO DE HARDWARE 1: GEOLOCALIZACIÓN SATELITAL -->
+          <div class="hardware-box">
+            <div class="hardware-header">
+              <span class="hardware-title">
+                🛰️ Posicionamiento GNSS (GPS)
+              </span>
+              <button type="button" id="btn-capturar-gps" class="btn-secondary">
+                📍 Adquirir Coordenadas GPS
+              </button>
+            </div>
+            <div id="gps-resultado-info" style="font-size: 0.8rem; color: var(--text-muted); line-height: 1.4;">
+              Coordenadas pendientes de adquisición
+            </div>
+          </div>
+
+          <!-- MÓDULO DE HARDWARE 2: CÁMARA Y EVIDENCIA VISUAL -->
+          <div class="hardware-box">
+            <div class="hardware-header">
+              <span class="hardware-title">
+                📸 Evidencia Fotográfica
+              </span>
+              <div style="display: flex; gap: 8px;">
+                <button type="button" id="btn-iniciar-camara" class="btn-secondary">
+                  📷 Activar Cámara
+                </button>
+                <label for="input-foto-fallback" class="btn-secondary" style="cursor: pointer;"
+                  title="Cargar desde galería">
+                  📁 Galería
+                </label>
+                <input type="file" id="input-foto-fallback" accept="image/*" capture="environment"
+                  style="display: none;">
+              </div>
+            </div>
+
+            <!-- Visor en Vivo de la Cámara -->
+            <div id="camera-viewport" class="camera-viewport">
+              <video id="camera-stream" class="camera-video" autoplay playsinline muted></video>
+              <div class="camera-controls">
+                <button type="button" id="btn-switch-camara" class="btn-secondary" title="Cambiar Cámara">🔄</button>
+                <button type="button" id="btn-disparar-foto" class="btn-capture" title="Tomar Foto"
+                  aria-label="Tomar Fotografía">⚪</button>
+              </div>
+            </div>
+
+            <div id="foto-preview-resultado"></div>
+          </div>
+
+          <button type="submit" id="btn-guardar-reporte" class="btn-primary">
+            💾 Guardar Reporte Cívico
+          </button>
+        </form>
+      </div>
+    </section>
+
+    <!-- VISTA 3: CENTRO DE CONTROL OFFLINE, SYNC Y PUSH -->
+    <section id="vista-sync" class="view-section">
+      <div class="form-card">
+        <h2 style="font-size: 1.25rem; font-weight: 800; margin-bottom: 4px; color: #fff;">
+          ⚙️ Centro de Control de Resiliencia y Red
+        </h2>
+        <p style="font-size: 0.82rem; color: var(--text-muted); margin-bottom: 20px;">
+          Herramientas de auditoría para validar la tolerancia a fallos en Modo Avión, Background Sync y Notificaciones
+          Push.
+        </p>
+
+        <!-- Simulador de Modo Avión -->
+        <div
+          style="background: var(--bg-secondary); border: 1px solid var(--border-color); border-radius: 10px; padding: 14px; margin-bottom: 16px;">
+          <h3 style="font-size: 0.95rem; font-weight: 700; margin-bottom: 6px; color: #fff;">
+            ✈️ Simulador de Entorno Hostil (Modo Avión)
+          </h3>
+          <p style="font-size: 0.8rem; color: var(--text-muted); margin-bottom: 12px;">
+            Simula la desconexión total sin necesidad de apagar el Wi-Fi físico de tu computadora o teléfono.
+          </p>
+          <button type="button" id="btn-toggle-modo-avion" class="btn-secondary"
+            style="width: 100%; justify-content: center; padding: 10px;">
+            ✈️ Simular Modo Avión (Desconectar)
+          </button>
+        </div>
+
+        <!-- Cola de Background Sync -->
+        <div
+          style="background: var(--bg-secondary); border: 1px solid var(--border-color); border-radius: 10px; padding: 14px; margin-bottom: 16px;">
+          <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px;">
+            <h3 style="font-size: 0.95rem; font-weight: 700; color: #fff;">
+              📥 Cola de Sincronización Diferida (IndexedDB)
+            </h3>
+            <button type="button" id="btn-forzar-sync" class="btn-secondary">
+              🚀 Forzar Sync
+            </button>
+          </div>
+          <div id="tabla-cola-sync">
+            <p style="font-size: 0.8rem; color: var(--text-muted);">Cargando registros pendientes...</p>
+          </div>
+        </div>
+
+        <!-- Disparador de Notificaciones Push de Demostración -->
+        <div
+          style="background: var(--bg-secondary); border: 1px solid var(--border-color); border-radius: 10px; padding: 14px; margin-bottom: 16px;">
+          <h3 style="font-size: 0.95rem; font-weight: 700; margin-bottom: 6px; color: #fff;">
+            🔔 Protocolo de Notificaciones Push Nativas
+          </h3>
+          <p style="font-size: 0.8rem; color: var(--text-muted); margin-bottom: 12px;">
+            Prueba la alerta del sistema operativo que avisa al ciudadano cuando su reporte ha sido resuelto.
+          </p>
+          <button type="button" id="btn-demo-push" class="btn-secondary"
+            style="width: 100%; justify-content: center; padding: 10px;">
+            📲 Simular Alerta Push de Reporte Solucionado
+          </button>
+        </div>
+
+        <!-- Ficha de Diagnóstico de PWA -->
+        <div
+          style="background: rgba(16, 185, 129, 0.08); border: 1px solid rgba(16, 185, 129, 0.3); border-radius: 10px; padding: 14px; font-size: 0.8rem; color: #cbd5e1;">
+          <h4 style="font-weight: 700; color: var(--utm-green-light); margin-bottom: 6px;">
+            🛡️ Certificación PWA - UTM Proyecto Integrador 2
+          </h4>
+          <ul style="list-style: none; line-height: 1.6;">
+            <li>• <b>Application Shell:</b> Inmutable y cacheado vía Cache API (FCP &lt; 0.8s)</li>
+            <li>• <b>Persistencia Transaccional:</b> IndexedDB (Cero uso de localStorage)</li>
+            <li>• <b>Sensores Físicos:</b> Geolocation API GNSS + MediaDevices Video/Camera</li>
+            <li>• <b>Segundo Plano:</b> Service Worker con Background Sync + Push</li>
+          </ul>
+        </div>
+
+      </div>
+    </section>
+
+  </main>
+
+  <!-- BANNER FLOTANTE DE INSTALACIÓN PWA (A2HS) -->
+  <div id="pwa-install-banner" style="display: none; position: fixed; bottom: 80px; left: 16px; right: 16px; max-width: 440px; margin: 0 auto; background: rgba(15, 23, 42, 0.95); backdrop-filter: blur(16px); border: 1px solid var(--utm-green); border-radius: 12px; padding: 14px 16px; box-shadow: 0 10px 25px -5px rgba(0,0,0,0.6); z-index: 1500; align-items: center; justify-content: space-between; gap: 12px; animation: slideUpBanner 0.4s ease-out;">
+    <div style="display: flex; align-items: center; gap: 10px;">
+      <div style="background: var(--utm-green); width: 36px; height: 36px; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 1.2rem;">
+        📥
+      </div>
+      <div>
+        <p style="font-size: 0.88rem; font-weight: 700; color: #fff; margin: 0;">Instalar CivicGuard</p>
+        <p style="font-size: 0.72rem; color: var(--text-muted); margin: 0;">Úsala en pantalla completa y sin internet</p>
+      </div>
+    </div>
+    <div style="display: flex; align-items: center; gap: 6px;">
+      <button id="btn-pwa-dismiss" style="background: transparent; border: none; color: var(--text-muted); font-size: 1.1rem; cursor: pointer; padding: 4px 8px;">✕</button>
+      <button id="btn-pwa-install" class="btn-primary" style="padding: 8px 14px; font-size: 0.8rem; width: auto; box-shadow: none;">Instalar</button>
+    </div>
+  </div>
+
+  <style>
+    @keyframes slideUpBanner {
+      from { transform: translateY(30px); opacity: 0; }
+      to { transform: translateY(0); opacity: 1; }
+    }
+  </style>
+
+
+  <!-- 4. BARRA DE NAVEGACIÓN INFERIOR (MOBILE SHELL) -->
+  <nav class="bottom-nav" aria-label="Navegación principal">
+    <button class="nav-item active" data-target="vista-tablero">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <rect x="3" y="3" width="7" height="7"></rect>
+        <rect x="14" y="3" width="7" height="7"></rect>
+        <rect x="14" y="14" width="7" height="7"></rect>
+        <rect x="3" y="14" width="7" height="7"></rect>
+      </svg>
+      <span>Tablero</span>
+    </button>
+
+    <button class="nav-item" data-target="vista-nuevo">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <circle cx="12" cy="12" r="10"></circle>
+        <line x1="12" y1="8" x2="12" y2="16"></line>
+        <line x1="8" y1="12" x2="16" y2="12"></line>
+      </svg>
+      <span>Reportar</span>
+    </button>
+
+    <button class="nav-item" data-target="vista-sync">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <path
+          d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83" />
+      </svg>
+      <span>Control</span>
+    </button>
+  </nav>
+
+  <!-- SCRIPT PRINCIPAL DE LA APLICACIÓN -->
+  <script>
+
+// ==========================================
+// CIVICGUARD PWA - CORE LOGIC
+// ==========================================
+
+// 1. IndexedDB Store
+/**
+ * Módulo de Persistencia Asíncrona Transaccional IndexedDB
+ * CivicGuard PWA - UTM Proyecto Integrador 2
+ * 
+ * NOTA DE CONFORMIDAD ARQUITECTÓNICA:
+ * Queda estrictamente PROHIBIDO el uso de APIs síncronas bloqueantes como `localStorage`.
+ * Toda persistencia se ejecuta asíncronamente en IndexedDB sin impacto en el UI Thread.
+ */
+
+const DB_NAME = 'CivicGuardDB';
+const DB_VERSION = 1;
+
+class IndexedStore {
+  constructor() {
+    this.db = null;
+    this._initPromise = null;
+  }
+
+  /**
+   * Abre o crea la base de datos IndexedDB
+   */
+  async init() {
+    if (this.db) return this.db;
+    if (this._initPromise) return this._initPromise;
+
+    this._initPromise = new Promise((resolve, reject) => {
+      const request = indexedDB.open(DB_NAME, DB_VERSION);
+
+      request.onupgradeneeded = (event) => {
+        const db = event.target.result;
+        console.log('[IndexedDB] 🛠️ Creando/actualizando esquema de CivicGuardDB v' + DB_VERSION);
+
+        // Store 1: Reportes de incidencias
+        if (!db.objectStoreNames.contains('reportes')) {
+          const store = db.createObjectStore('reportes', { keyPath: 'id' });
+          store.createIndex('categoria', 'categoria', { unique: false });
+          store.createIndex('estatus', 'estatus', { unique: false });
+          store.createIndex('creadoEn', 'creadoEn', { unique: false });
+          store.createIndex('severidad', 'severidad', { unique: false });
+        }
+
+        // Store 2: Cola de Background Sync
+        if (!db.objectStoreNames.contains('cola_sincronizacion')) {
+          const syncStore = db.createObjectStore('cola_sincronizacion', { keyPath: 'idReporte' });
+          syncStore.createIndex('intentos', 'intentos', { unique: false });
+          syncStore.createIndex('creadoEn', 'creadoEn', { unique: false });
+        }
+      };
+
+      request.onsuccess = (event) => {
+        this.db = event.target.result;
+        console.log('[IndexedDB] ✅ Conexión establecida exitosamente con CivicGuardDB.');
+        resolve(this.db);
+      };
+
+      request.onerror = (event) => {
+        console.error('[IndexedDB] ❌ Error fatal al abrir base de datos:', event.target.error);
+        reject(event.target.error);
+      };
+    });
+
+    await this._initPromise;
+    await this._sembrarDatosInicialesSiAplica();
+    return this.db;
+  }
+
+  /**
+   * Guarda un nuevo reporte de incidencia en IndexedDB
+   * @param {Object} reporte 
+   */
+  async guardarReporte(reporte) {
+    const db = await this.init();
+    return new Promise((resolve, reject) => {
+      const tx = db.transaction(['reportes', 'cola_sincronizacion'], 'readwrite');
+      const storeReportes = tx.objectStore('reportes');
+      const storeSync = tx.objectStore('cola_sincronizacion');
+
+      // Garantizar timestamp y estatus
+      if (!reporte.id) reporte.id = 'REP-' + Date.now().toString(36).toUpperCase() + '-' + Math.random().toString(36).substring(2, 5).toUpperCase();
+      if (!reporte.creadoEn) reporte.creadoEn = new Date().toISOString();
+      if (!reporte.estatus) reporte.estatus = 'local_retenido'; // Operación Offline-First
+
+      storeReportes.put(reporte);
+
+      // Si aún no está sincronizado, encolar para el Service Worker
+      if (reporte.estatus === 'local_retenido') {
+        storeSync.put({
+          idReporte: reporte.id,
+          intentos: 0,
+          creadoEn: reporte.creadoEn,
+          payload: {
+            id: reporte.id,
+            titulo: reporte.titulo,
+            categoria: reporte.categoria,
+            descripcion: reporte.descripcion,
+            severidad: reporte.severidad,
+            coordenadas: reporte.coordenadas,
+            creadoEn: reporte.creadoEn
+          }
+        });
+      }
+
+      tx.oncomplete = () => {
+        console.log(`[IndexedDB] 💾 Reporte #${reporte.id} retenido exitosamente en disco local.`);
+        resolve(reporte);
+      };
+
+      tx.onerror = (e) => reject(e.target.error);
+    });
+  }
+
+  /**
+   * Obtiene todos los reportes ordenados de más reciente a más antiguo
+   */
+  async obtenerReportes() {
+    const db = await this.init();
+    return new Promise((resolve, reject) => {
+      const tx = db.transaction('reportes', 'readonly');
+      const store = tx.objectStore('reportes');
+      const request = store.getAll();
+
+      request.onsuccess = () => {
+        const reportes = request.result || [];
+        // Orden descendente por fecha
+        reportes.sort((a, b) => new Date(b.creadoEn) - new Date(a.creadoEn));
+        resolve(reportes);
+      };
+
+      request.onerror = (e) => reject(e.target.error);
+    });
+  }
+
+  /**
+   * Obtiene un reporte específico por su ID
+   */
+  async obtenerReportePorId(id) {
+    const db = await this.init();
+    return new Promise((resolve, reject) => {
+      const tx = db.transaction('reportes', 'readonly');
+      const store = tx.objectStore('reportes');
+      const req = store.get(id);
+      req.onsuccess = () => resolve(req.result || null);
+      req.onerror = (e) => reject(e.target.error);
+    });
+  }
+
+  /**
+   * Actualiza el estatus de un reporte (ej. local_retenido -> despachado -> resuelto)
+   */
+  async actualizarEstatusReporte(id, nuevoEstatus, extra = {}) {
+    const db = await this.init();
+    return new Promise((resolve, reject) => {
+      const tx = db.transaction(['reportes', 'cola_sincronizacion'], 'readwrite');
+      const store = tx.objectStore('reportes');
+      const syncStore = tx.objectStore('cola_sincronizacion');
+
+      const req = store.get(id);
+      req.onsuccess = () => {
+        const rep = req.result;
+        if (!rep) return reject(new Error('Reporte no encontrado: ' + id));
+
+        rep.estatus = nuevoEstatus;
+        Object.assign(rep, extra);
+        store.put(rep);
+
+        // Si ya fue despachado o resuelto, se retira de la cola de sync pendiente
+        if (nuevoEstatus === 'despachado' || nuevoEstatus === 'resuelto') {
+          syncStore.delete(id);
+        }
+
+        tx.oncomplete = () => resolve(rep);
+      };
+      req.onerror = (e) => reject(e.target.error);
+    });
+  }
+
+  /**
+   * Obtiene la lista de elementos en la cola de Background Sync
+   */
+  async obtenerColaSync() {
+    const db = await this.init();
+    return new Promise((resolve, reject) => {
+      const tx = db.transaction('cola_sincronizacion', 'readonly');
+      const store = tx.objectStore('cola_sincronizacion');
+      const req = store.getAll();
+      req.onsuccess = () => resolve(req.result || []);
+      req.onerror = (e) => reject(e.target.error);
+    });
+  }
+
+  /**
+   * Obtiene estadísticas agregadas de la persistencia local
+   */
+  async obtenerMetricas() {
+    const reportes = await this.obtenerReportes();
+    const pendientes = reportes.filter(r => r.estatus === 'local_retenido').length;
+    const sincronizados = reportes.filter(r => r.estatus === 'despachado').length;
+    const resueltos = reportes.filter(r => r.estatus === 'resuelto').length;
+
+    return {
+      total: reportes.length,
+      pendientes,
+      sincronizados,
+      resueltos
+    };
+  }
+
+  /**
+   * Sembrado inicial para demostración de entrega académica UTM
+   */
+  async _sembrarDatosInicialesSiAplica() {
+    const tx = this.db.transaction('reportes', 'readonly');
+    const store = tx.objectStore('reportes');
+    const countReq = store.count();
+
+    countReq.onsuccess = () => {
+      if (countReq.result === 0) {
+        console.log('[IndexedDB] 🌱 Sembrando datos cívicos de demostración para evaluación UTM...');
+        const writeTx = this.db.transaction(['reportes', 'cola_sincronizacion'], 'readwrite');
+        const rStore = writeTx.objectStore('reportes');
+
+        const semillas = [
+          {
+            id: 'REP-UTM-001',
+            titulo: 'Bache profundo en carril derecho de Av. Circuito Colonias',
+            categoria: 'bacheo',
+            severidad: 'alta',
+            descripcion: 'Diámetro aproximado de 1.2m, pone en riesgo el paso de motocicletas y transporte público.',
+            coordenadas: {
+              latitud: 20.9385,
+              longitud: -89.6247,
+              precision: 4.8
+            },
+            estatus: 'despachado',
+            creadoEn: new Date(Date.now() - 86400000 * 2).toISOString(),
+            sincronizadoEn: new Date(Date.now() - 86400000 * 2 + 15000).toISOString(),
+            evidenciaFotografica: null
+          },
+          {
+            id: 'REP-UTM-002',
+            titulo: 'Fuga de agua potable frente al Campus UTM',
+            categoria: 'fuga_agua',
+            severidad: 'critica',
+            descripcion: 'Presión constante brotando del pavimento. Se genera encharcamiento en entrada peatonal.',
+            coordenadas: {
+              latitud: 20.9254,
+              longitud: -89.6178,
+              precision: 3.2
+            },
+            estatus: 'resuelto',
+            creadoEn: new Date(Date.now() - 86400000).toISOString(),
+            sincronizadoEn: new Date(Date.now() - 86400000 + 10000).toISOString(),
+            resueltoEn: new Date(Date.now() - 3600000 * 5).toISOString(),
+            evidenciaFotografica: null
+          },
+          {
+            id: 'REP-UTM-003',
+            titulo: 'Luminaria intermitente y cable expuesto en parque central',
+            categoria: 'luminarias',
+            severidad: 'media',
+            descripcion: 'Poste metálico presenta chisporroteo durante la noche, zona oscura para transeúntes.',
+            coordenadas: {
+              latitud: 20.9410,
+              longitud: -89.6290,
+              precision: 6.1
+            },
+            estatus: 'local_retenido',
+            creadoEn: new Date().toISOString(),
+            sincronizadoEn: null,
+            evidenciaFotografica: null
+          }
+        ];
+
+        for (const sem of semillas) {
+          rStore.put(sem);
+        }
+      }
+    };
+  }
+}
+
+const dbStore = new IndexedStore();
+
+
+// 2. Supabase Client
+/**
+ * Cliente de Integración Supabase Cloud (PostgreSQL Headless)
+ * CivicGuard PWA - UTM Proyecto Integrador 2
+ */
+
+const SUPABASE_CONFIG = {
+  url: 'https://wjfbcmkgomxoqjtkeaoe.supabase.co',
+  anonKey: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6IndqZmJjbWtnb214b3FqdGtlYW9lIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTUwMTk1OTIsImV4cCI6MjExMDU5NTU5Mn0.LgehF5fvMGQFly0DbKGezDnCI4gZYmod0iiOHRYcTGs'
+};
+
+class SupabaseClient {
+  /**
+   * Envía un reporte a la tabla 'reportes' de Supabase
+   * @param {Object} reporte
+   */
+  static async enviarReporte(reporte) {
+    const payload = {
+      id: reporte.id,
+      titulo: reporte.titulo,
+      categoria: reporte.categoria,
+      severidad: reporte.severidad,
+      descripcion: reporte.descripcion,
+      latitud: reporte.coordenadas ? reporte.coordenadas.latitud : null,
+      longitud: reporte.coordenadas ? reporte.coordenadas.longitud : null,
+      precision_gps: reporte.coordenadas ? reporte.coordenadas.precision : null,
+      foto_data: reporte.evidenciaFotografica ? reporte.evidenciaFotografica.dataUrl : null,
+      estatus: 'despachado',
+      creado_en: reporte.creadoEn || new Date().toISOString()
+    };
+
+    const res = await fetch(`${SUPABASE_CONFIG.url}/rest/v1/reportes`, {
+      method: 'POST',
+      headers: {
+        'apikey': SUPABASE_CONFIG.anonKey,
+        'Authorization': `Bearer ${SUPABASE_CONFIG.anonKey}`,
+        'Content-Type': 'application/json',
+        'Prefer': 'return=representation'
+      },
+      body: JSON.stringify(payload)
+    });
+
+    if (!res.ok) {
+      const errText = await res.text();
+      throw new Error(`Error Supabase (${res.status}): ${errText}`);
+    }
+
+    return await res.json();
+  }
+
+  /**
+   * Obtiene todos los reportes desde Supabase
+   */
+  static async obtenerReportes() {
+    const res = await fetch(`${SUPABASE_CONFIG.url}/rest/v1/reportes?select=*&order=creado_en.desc`, {
+      method: 'GET',
+      headers: {
+        'apikey': SUPABASE_CONFIG.anonKey,
+        'Authorization': `Bearer ${SUPABASE_CONFIG.anonKey}`
+      }
+    });
+
+    if (!res.ok) {
+      throw new Error(`Error al consultar Supabase (${res.status})`);
+    }
+
+    const data = await res.json();
+    // Mapear al formato interno de CivicGuard
+    return data.map(item => ({
+      id: item.id,
+      titulo: item.titulo,
+      categoria: item.categoria,
+      severidad: item.severidad,
+      descripcion: item.descripcion,
+      coordenadas: item.latitud ? {
+        latitud: item.latitud,
+        longitud: item.longitud,
+        precision: item.precision_gps || 5.0
+      } : null,
+      evidenciaFotografica: item.foto_data ? { dataUrl: item.foto_data } : null,
+      estatus: item.estatus || 'despachado',
+      creadoEn: item.creado_en
+    }));
+  }
+
+  /**
+   * Actualiza el estatus de un reporte en Supabase (ej. resuelto)
+   */
+  static async actualizarEstatus(id, nuevoEstatus) {
+    const res = await fetch(`${SUPABASE_CONFIG.url}/rest/v1/reportes?id=eq.${id}`, {
+      method: 'PATCH',
+      headers: {
+        'apikey': SUPABASE_CONFIG.anonKey,
+        'Authorization': `Bearer ${SUPABASE_CONFIG.anonKey}`,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({ estatus: nuevoEstatus })
+    });
+
+    return res.ok;
+  }
+}
+
+
+// 3. Geolocation Hardware
+/**
+ * Módulo de Acceso a Hardware: Geolocalización Satelital (W3C Geolocation API)
+ * CivicGuard PWA - UTM Proyecto Integrador 2
+ */
+
+class GeolocationHardware {
+  /**
+   * Verifica la compatibilidad de la API de Geolocalización
+   */
+  static esCompatible() {
+    return 'geolocation' in navigator;
+  }
+
+  /**
+   * Adquiere las coordenadas GNSS de alta precisión del operador en campo
+   * @param {Object} opcionesConfig
+   * @returns {Promise<Object>}
+   */
+  static capturarCoordenadas(opcionesConfig = {}) {
+    return new Promise((resolve, reject) => {
+      if (!this.esCompatible()) {
+        return reject(new Error('La API de Geolocalización no está disponible en este dispositivo.'));
+      }
+
+      const opciones = {
+        enableHighAccuracy: true, // Forzar uso del receptor GPS físico
+        timeout: opcionesConfig.timeout || 12000, // 12 segundos de tolerancia
+        maximumAge: 0 // No usar lecturas previas en caché del sensor
+      };
+
+      navigator.geolocation.getCurrentPosition(
+        (posicion) => {
+          const resultado = {
+            latitud: Number(posicion.coords.latitude.toFixed(6)),
+            longitud: Number(posicion.coords.longitude.toFixed(6)),
+            precision: Number(posicion.coords.accuracy.toFixed(1)), // en metros
+            altitud: posicion.coords.altitude ? Number(posicion.coords.altitude.toFixed(1)) : null,
+            timestamp: posicion.timestamp,
+            fechaLectura: new Date(posicion.timestamp).toLocaleTimeString()
+          };
+          console.log('[Hardware GPS] 📍 Posicionamiento satelital adquirido:', resultado);
+          resolve(resultado);
+        },
+        (error) => {
+          console.warn('[Hardware GPS] ⚠️ Error en adquisición GNSS:', error.message);
+          let motivo = 'Fallo en sensor GPS.';
+          switch (error.code) {
+            case error.PERMISSION_DENIED:
+              motivo = 'Permiso de ubicación denegado por el usuario. Habilítalo en la barra del navegador.';
+              break;
+            case error.POSITION_UNAVAILABLE:
+              motivo = 'Señal satelital no disponible (sin vista despejada al cielo).';
+              break;
+            case error.TIMEOUT:
+              motivo = 'Tiempo de espera agotado al consultar satélites GPS.';
+              break;
+          }
+          reject(new Error(motivo));
+        },
+        opciones
+      );
+    });
+  }
+
+  /**
+   * Genera un enlace de mapa (OpenStreetMap) seguro y sin dependencias pesadas
+   */
+  static generarUrlMapaOSM(lat, lon) {
+    return `https://www.openstreetmap.org/?mlat=${lat}&mlon=${lon}#map=17/${lat}/${lon}`;
+  }
+}
+
+
+// 4. Camera Hardware
+/**
+ * Módulo de Acceso a Hardware: Cámara y Evidencia Fotográfica
+ * (MediaDevices API, getUserMedia y HTML5 Canvas Compression)
+ * CivicGuard PWA - UTM Proyecto Integrador 2
+ */
+
+class CameraHardware {
+  constructor() {
+    this.stream = null;
+    this.videoElement = null;
+    this.canvasElement = null;
+    this.facingMode = 'environment'; // Cámara trasera por defecto para incidencias urbanas
+  }
+
+  /**
+   * Verifica compatibilidad de la API de Cámara
+   */
+  static esCompatible() {
+    return !!(navigator.mediaDevices && navigator.mediaDevices.getUserMedia);
+  }
+
+  /**
+   * Inicia el visor de cámara en vivo sobre un elemento <video>
+   * @param {HTMLVideoElement} videoElem 
+   */
+  async iniciarVisor(videoElem) {
+    if (!CameraHardware.esCompatible()) {
+      throw new Error('La API MediaDevices/getUserMedia no es compatible en este navegador.');
+    }
+
+    this.detenerVisor(); // Detener flujo previo si existe
+    this.videoElement = videoElem;
+
+    const constraints = {
+      video: {
+        facingMode: { ideal: this.facingMode },
+        width: { ideal: 1280 },
+        height: { ideal: 720 }
+      },
+      audio: false
+    };
+
+    try {
+      this.stream = await navigator.mediaDevices.getUserMedia(constraints);
+      this.videoElement.srcObject = this.stream;
+      await this.videoElement.play();
+      console.log('[Hardware Cámara] 📸 Visor de video activo en modo:', this.facingMode);
+      return true;
+    } catch (err) {
+      console.error('[Hardware Cámara] ❌ Error al solicitar stream de video:', err);
+      throw new Error('No se pudo acceder a la cámara: ' + (err.message || 'Permiso denegado'));
+    }
+  }
+
+  /**
+   * Alterna entre cámara trasera y cámara frontal
+   */
+  async alternarCamara() {
+    this.facingMode = this.facingMode === 'environment' ? 'user' : 'environment';
+    if (this.videoElement) {
+      return await this.iniciarVisor(this.videoElement);
+    }
+  }
+
+  /**
+   * Captura una instantánea del video actual y la comprime a WebP
+   * @returns {Object} { dataUrl, tamanioBytes, dimensiones }
+   */
+  capturarInstantanea() {
+    if (!this.stream || !this.videoElement) {
+      throw new Error('El visor de cámara no está activo.');
+    }
+
+    const video = this.videoElement;
+    const canvas = document.createElement('canvas');
+    const width = video.videoWidth || 640;
+    const height = video.videoHeight || 480;
+
+    canvas.width = width;
+    canvas.height = height;
+
+    const ctx = canvas.getContext('2d');
+    ctx.drawImage(video, 0, 0, width, height);
+
+    // Compresión WebP al 80% (o JPEG como fallback nativo)
+    let dataUrl = canvas.toDataURL('image/webp', 0.8);
+    if (!dataUrl.startsWith('data:image/webp')) {
+      dataUrl = canvas.toDataURL('image/jpeg', 0.8);
+    }
+
+    // Cálculo aproximado de peso en bytes del Base64
+    const tamanioBytes = Math.round((dataUrl.length * 3) / 4);
+
+    console.log(`[Hardware Cámara] 🖼️ Evidencia capturada: ${width}x${height} px, ${(tamanioBytes / 1024).toFixed(1)} KB`);
+
+    return {
+      dataUrl,
+      tamanioBytes,
+      tamanioKB: (tamanioBytes / 1024).toFixed(1),
+      dimensiones: `${width}x${height}`,
+      timestamp: Date.now()
+    };
+  }
+
+  /**
+   * Detiene el flujo de la cámara y libera el hardware físico
+   */
+  detenerVisor() {
+    if (this.stream) {
+      this.stream.getTracks().forEach(track => track.stop());
+      this.stream = null;
+      console.log('[Hardware Cámara] 🛑 Hardware de video liberado.');
+    }
+    if (this.videoElement) {
+      this.videoElement.srcObject = null;
+    }
+  }
+
+  /**
+   * Procesa una fotografía seleccionada mediante archivo/fallback
+   * @param {File} file 
+   * @returns {Promise<Object>}
+   */
+  static procesarArchivoImagen(file) {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        const img = new Image();
+        img.onload = () => {
+          const MAX_WIDTH = 1280;
+          const scale = img.width > MAX_WIDTH ? MAX_WIDTH / img.width : 1;
+          const canvas = document.createElement('canvas');
+          canvas.width = Math.round(img.width * scale);
+          canvas.height = Math.round(img.height * scale);
+
+          const ctx = canvas.getContext('2d');
+          ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+
+          let dataUrl = canvas.toDataURL('image/webp', 0.8);
+          if (!dataUrl.startsWith('data:image/webp')) {
+            dataUrl = canvas.toDataURL('image/jpeg', 0.8);
+          }
+
+          const tamanioBytes = Math.round((dataUrl.length * 3) / 4);
+          resolve({
+            dataUrl,
+            tamanioBytes,
+            tamanioKB: (tamanioBytes / 1024).toFixed(1),
+            dimensiones: `${canvas.width}x${canvas.height}`,
+            timestamp: Date.now()
+          });
+        };
+        img.onerror = reject;
+        img.src = e.target.result;
+      };
+      reader.onerror = reject;
+      reader.readAsDataURL(file);
+    });
+  }
+}
+
+
+// 5. Background Sync
+/**
+ * Orquestador de Background Sync API y Resiliencia de Red
+ * CivicGuard PWA - UTM Proyecto Integrador 2
+ */
+
+
+
+
+class BackgroundSyncManager {
+  /**
+   * Programa la sincronización automática de reportes retenidos
+   */
+  static async solicitarSincronizacion() {
+    if ('serviceWorker' in navigator && 'SyncManager' in window) {
+      try {
+        const reg = await navigator.serviceWorker.ready;
+        await reg.sync.register('sync-civic-reports');
+        console.log('[Background Sync] 🔄 Tarea "sync-civic-reports" registrada en Service Worker.');
+        return { modo: 'ServiceWorkerSync', exitoso: true };
+      } catch (err) {
+        console.warn('[Background Sync] ⚠️ No se pudo registrar SyncManager en SW, usando fallback:', err);
+      }
+    }
+
+    // Fallback: Si el navegador no soporta SyncManager (iOS Safari / Firefox)
+    if (navigator.onLine) {
+      this.procesarColaDirecta();
+    }
+    return { modo: 'FallbackOnline', exitoso: true };
+  }
+
+  /**
+   * Despacha directamente los elementos retenidos hacia Supabase Cloud
+   */
+  static async procesarColaDirecta(notificarCallback = null) {
+    if (!navigator.onLine) {
+      console.log('[Background Sync] 🚫 Dispositivo desconectado. Permanecen retenidos en IndexedDB.');
+      return { despachados: 0, pendientes: (await dbStore.obtenerColaSync()).length };
+    }
+
+    const cola = await dbStore.obtenerColaSync();
+    if (cola.length === 0) {
+      console.log('[Background Sync] ✨ Cola de sincronización vacía.');
+      return { despachados: 0, pendientes: 0 };
+    }
+
+    console.log(`[Background Sync] 🚀 Despachando ${cola.length} reporte(s) hacia Supabase Cloud...`);
+    let exitosos = 0;
+
+    for (const item of cola) {
+      try {
+        // 1. Obtener reporte completo de IndexedDB (incluyendo foto si tiene)
+        const reporteCompleto = await dbStore.obtenerReportePorId(item.idReporte) || item.payload;
+
+        // 2. Enviar a Supabase PostgreSQL
+        await SupabaseClient.enviarReporte(reporteCompleto);
+
+        // 3. Marcar como despachado en IndexedDB local
+        await dbStore.actualizarEstatusReporte(item.idReporte, 'despachado', {
+          sincronizadoEn: new Date().toISOString()
+        });
+        exitosos++;
+        console.log(`[Background Sync] ☁️ Reporte #${item.idReporte} persistido exitosamente en Supabase.`);
+
+      } catch (err) {
+        console.warn(`[Background Sync] ⚠️ Falló sincronización a Supabase para #${item.idReporte}:`, err.message);
+        
+        // Fallback al endpoint mock local si Supabase diera error temporal
+        try {
+          const resLocal = await fetch('/api/reportes', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(item.payload)
+          });
+          if (resLocal.ok) {
+            await dbStore.actualizarEstatusReporte(item.idReporte, 'despachado');
+            exitosos++;
+          }
+        } catch (e2) {
+          // Permanecer en cola para el próximo reintento
+        }
+      }
+    }
+
+    if (notificarCallback && exitosos > 0) {
+      notificarCallback(exitosos);
+    }
+
+    return { despachados: exitosos, pendientes: cola.length - exitosos };
+  }
+}
+
+
+// 6. Push Service
+/**
+ * Módulo de Notificaciones Push y Alertas Nativas (Semana 4)
+ * CivicGuard PWA - UTM Proyecto Integrador 2
+ */
+
+class PushNotificationService {
+  /**
+   * Comprueba si las notificaciones están soportadas
+   */
+  static esCompatible() {
+    return 'Notification' in window && 'serviceWorker' in navigator;
+  }
+
+  /**
+   * Obtiene el estado actual del permiso de notificaciones
+   */
+  static obtenerEstadoPermiso() {
+    if (!this.esCompatible()) return 'incompatible';
+    return Notification.permission; // 'default' | 'granted' | 'denied'
+  }
+
+  /**
+   * Solicita el permiso al usuario
+   */
+  static async solicitarPermiso() {
+    if (!this.esCompatible()) {
+      throw new Error('Las notificaciones no están soportadas en este dispositivo.');
+    }
+
+    const permiso = await Notification.requestPermission();
+    console.log('[Notificaciones Push] 🔔 Permiso concedido:', permiso);
+    return permiso;
+  }
+
+  /**
+   * Emite una notificación nativa del sistema a través del Service Worker
+   * @param {string} titulo 
+   * @param {Object} opciones 
+   */
+  static async emitirNotificacion(titulo, opciones = {}) {
+    if (!('Notification' in window)) {
+      throw new Error('Tu navegador no soporta la API de Notificaciones.');
+    }
+
+    if (Notification.permission === 'denied') {
+      throw new Error('Las notificaciones están bloqueadas en tu navegador. Haz clic en el candado 🔒 junto a la URL para permitirlas.');
+    }
+
+    if (Notification.permission !== 'granted') {
+      const permiso = await Notification.requestPermission();
+      if (permiso !== 'granted') {
+        throw new Error('No se concedió el permiso de notificaciones.');
+      }
+    }
+
+    // Ruta segura absoluta para el icono
+    const iconUrl = new URL('assets/icons/icon-192.png', window.location.href).href;
+    const badgeUrl = new URL('assets/icons/badge-72.png', window.location.href).href;
+
+    const opcionesPredeterminadas = {
+      body: opciones.body || 'Alerta de Infraestructura Urbana',
+      icon: iconUrl,
+      badge: badgeUrl,
+      vibrate: [200, 100, 200],
+      tag: opciones.tag || 'civicguard-alerta-' + Date.now(),
+      renotify: true,
+      data: {
+        url: window.location.href,
+        fecha: new Date().toISOString()
+      }
+    };
+
+    // Vibración háptica en móvil
+    if ('vibrate' in navigator) {
+      try { navigator.vibrate([200, 100, 200]); } catch(e) {}
+    }
+
+    // Intentar vía Service Worker primero
+    if ('serviceWorker' in navigator) {
+      try {
+        const reg = await navigator.serviceWorker.ready;
+        if (reg && reg.showNotification) {
+          await reg.showNotification(titulo, opcionesPredeterminadas);
+          console.log('[Notificaciones Push] 📲 Notificación emitida vía Service Worker.');
+          return true;
+        }
+      } catch (swErr) {
+        console.warn('[Notificaciones Push] Falló vía SW, intentando Notification directa:', swErr);
+      }
+    }
+
+    // Fallback directo
+    try {
+      new Notification(titulo, opcionesPredeterminadas);
+      return true;
+    } catch (directErr) {
+      console.error('[Notificaciones Push] Falló Notification directa:', directErr);
+      throw new Error('No se pudo desplegar la notificación del sistema: ' + directErr.message);
+    }
+  }
+
+  /**
+   * Simula la resolución de un reporte y emite la alerta del sistema
+   */
+  static async simularAlertaResolucion(idReporte, tituloReporte) {
+    return this.emitirNotificacion('🛠️ Reporte Solucionado - Cuadrilla Municipal', {
+      body: `La incidencia "${tituloReporte}" (#${idReporte}) ha sido reparada y verificada exitosamente.`,
+      tag: `solucion-${idReporte}`,
+      url: `/#tablero`
+    });
+  }
+}
+
+
+
+// ==========================================
+// PWA INSTALL LOGIC (A2HS & BeforeInstallPrompt)
+// ==========================================
+let deferredPromptInstall = null;
+
+window.addEventListener('beforeinstallprompt', (e) => {
+  console.log('[PWA] 📥 Evento beforeinstallprompt detectado.');
+  e.preventDefault();
+  deferredPromptInstall = e;
+
+  // Mostrar el botón en el header y el banner flotante
+  const btnHeader = document.getElementById('btn-instalar-header');
+  const banner = document.getElementById('pwa-install-banner');
+
+  if (btnHeader) btnHeader.style.display = 'inline-flex';
+  if (banner) banner.style.display = 'flex';
+});
+
+async function ejecutarInstalacionPWA() {
+  if (deferredPromptInstall) {
+    deferredPromptInstall.prompt();
+    const { outcome } = await deferredPromptInstall.userChoice;
+    console.log('[PWA] Respuesta del usuario a la instalación:', outcome);
+    
+    if (outcome === 'accepted') {
+      const banner = document.getElementById('pwa-install-banner');
+      const btnHeader = document.getElementById('btn-instalar-header');
+      if (banner) banner.style.display = 'none';
+      if (btnHeader) btnHeader.style.display = 'none';
+      mostrarToast('🎉 ¡CivicGuard instalada exitosamente!', 'success');
+    }
+    deferredPromptInstall = null;
+  } else {
+    // Si no está disponible el prompt nativo aún
+    mostrarToast('Para instalar: presiona los 3 puntos del navegador o el icono de descarga 📥 en la barra de URL.', 'info');
+  }
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+  const btnHeader = document.getElementById('btn-instalar-header');
+  const btnInstallBanner = document.getElementById('btn-pwa-install');
+  const btnDismissBanner = document.getElementById('btn-pwa-dismiss');
+  const banner = document.getElementById('pwa-install-banner');
+
+  if (btnHeader) btnHeader.addEventListener('click', ejecutarInstalacionPWA);
+  if (btnInstallBanner) btnInstallBanner.addEventListener('click', ejecutarInstalacionPWA);
+  if (btnDismissBanner && banner) {
+    btnDismissBanner.addEventListener('click', () => {
+      banner.style.display = 'none';
+    });
+  }
+});
+
+// 7. Application Shell Orchestrator
+/**
+ * Orquestador Principal del Application Shell (Client-Side)
+ * CivicGuard PWA - UTM Proyecto Integrador 2
+ */
+
+
+
+
+
+
+
+
+// Instancias de hardware
+const camera = new CameraHardware();
+
+// Estado en memoria de la UI
+const estadoUI = {
+  filtroActual: 'todos',
+  coordenadasCapturadas: null,
+  evidenciaFotografica: null,
+  modoAvionSimulado: false
+};
+
+// --- INICIALIZACIÓN AL CARGAR EL DOCUMENTO ---
+document.addEventListener('DOMContentLoaded', async () => {
+  console.log('🛡️ Inicializando CivicGuard PWA Application Shell...');
+  
+  // 1. Registro del Service Worker en la raíz
+  await registrarServiceWorker();
+
+  // 2. Monitoreo de Conectividad (Online / Offline)
+  inicializarMonitoreoRed();
+
+  // 3. Inicializar IndexedDB y cargar datos
+  await dbStore.init();
+  await actualizarMetricasUI();
+  await cargarReportesEnUI();
+
+  // 4. Configurar eventos de navegación y formularios
+  configurarNavegacion();
+  configurarFormularioReporte();
+  configurarSensoresHardware();
+  configurarCentroControlSync();
+});
+
+/**
+ * 1. REGISTRO DEL SERVICE WORKER (Semana 2)
+ */
+async function registrarServiceWorker() {
+  if ('serviceWorker' in navigator) {
+    try {
+      const reg = await navigator.serviceWorker.register('./sw.js');
+      console.log('[App Shell] ✅ Service Worker registrado en scope:', reg.scope);
+
+      // Detección de nueva versión
+      reg.addEventListener('updatefound', () => {
+        const nuevoWorker = reg.installing;
+        nuevoWorker.addEventListener('statechange', () => {
+          if (nuevoWorker.state === 'installed' && navigator.serviceWorker.controller) {
+            mostrarToast('🔄 Nueva versión disponible de CivicGuard instalada.', 'info');
+          }
+        });
+      });
+
+    } catch (err) {
+      console.error('[App Shell] ❌ Falló registro de Service Worker:', err);
+    }
+  } else {
+    console.warn('[App Shell] ⚠️ Service Worker no soportado en este navegador.');
+  }
+}
+
+/**
+ * 2. MONITOREO DE CONECTIVIDAD DE RED (Semana 3)
+ */
+function inicializarMonitoreoRed() {
+  const banner = document.getElementById('network-banner');
+  const bannerText = document.getElementById('network-status-text');
+
+  function actualizarEstado() {
+    const estaEnLinea = navigator.onLine && !estadoUI.modoAvionSimulado;
+
+    if (estaEnLinea) {
+      banner.className = 'online';
+      bannerText.innerHTML = '🟢 Conectado a Red Municipal (En Línea)';
+      // Disparar sincronización diferida al restablecer conexión
+      BackgroundSyncManager.procesarColaDirecta((cant) => {
+        mostrarToast(`🚀 ${cant} reporte(s) encolados se sincronizaron con éxito.`, 'success');
+        actualizarMetricasUI();
+        cargarReportesEnUI();
+      });
+    } else {
+      banner.className = 'offline';
+      bannerText.innerHTML = '📡 Modo Desconectado (Offline / Modo Avión) - Operatividad 100% activa';
+      mostrarToast('Modo Offline: Los reportes se retendrán en IndexedDB.', 'warning');
+    }
+  }
+
+  window.addEventListener('online', actualizarEstado);
+  window.addEventListener('offline', actualizarEstado);
+  actualizarEstado();
+}
+
+/**
+ * 3. NAVEGACIÓN Y CAMBIO DE VISTAS (App Shell)
+ */
+function configurarNavegacion() {
+  const navButtons = document.querySelectorAll('.nav-item');
+  const sections = document.querySelectorAll('.view-section');
+
+  navButtons.forEach(btn => {
+    btn.addEventListener('click', () => {
+      const targetView = btn.getAttribute('data-target');
+      
+      navButtons.forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+
+      sections.forEach(sec => {
+        if (sec.id === targetView) {
+          sec.classList.add('active');
+        } else {
+          sec.classList.remove('active');
+        }
+      });
+
+      // Si sale del formulario, apagar la cámara si estaba encendida
+      if (targetView !== 'vista-nuevo') {
+        camera.detenerVisor();
+        const visor = document.getElementById('camera-viewport');
+        if (visor) visor.style.display = 'none';
+      }
+
+      // Si entra a control offline, refrescar cola
+      if (targetView === 'vista-sync') {
+        refrescarColaSyncUI();
+      }
+    });
+  });
+}
+
+/**
+ * 4. RENDERIZADO DEL TABLERO DE INCIDENCIAS (CSR)
+ */
+async function cargarReportesEnUI() {
+  const listaContenedor = document.getElementById('lista-reportes');
+  if (!listaContenedor) return;
+
+  const reportes = await dbStore.obtenerReportes();
+
+  // Filtrado por categoría
+  const filtrados = estadoUI.filtroActual === 'todos' 
+    ? reportes 
+    : reportes.filter(r => r.categoria === estadoUI.filtroActual);
+
+  if (filtrados.length === 0) {
+    listaContenedor.innerHTML = `
+      <div style="text-align: center; padding: 40px 20px; color: var(--text-muted); background: var(--bg-card); border-radius: 12px;">
+        <p style="font-size: 1.1rem; font-weight: 600; color: #fff;">No hay incidencias en esta categoría</p>
+        <p style="font-size: 0.85rem; margin-top: 6px;">Usa el botón "Reportar" para registrar una nueva falla en infraestructura.</p>
+      </div>
+    `;
+    return;
+  }
+
+  // Sustitución de los skeletons por contenido real
+  listaContenedor.innerHTML = filtrados.map(r => {
+    const estatusLabels = {
+      'local_retenido': 'Pendiente de Sincronización',
+      'despachado': 'Despachado a Servidor',
+      'resuelto': 'Solucionado / Verificado'
+    };
+
+    const estatusIcons = {
+      'local_retenido': '⏳',
+      'despachado': '📡',
+      'resuelto': '✅'
+    };
+
+    const severidadColores = {
+      'critica': 'var(--color-critico)',
+      'alta': 'var(--color-alto)',
+      'media': 'var(--color-medio)',
+      'baja': 'var(--color-bajo)'
+    };
+
+    const coordStr = r.coordenadas 
+      ? `${r.coordenadas.latitud}, ${r.coordenadas.longitud} (±${r.coordenadas.precision}m)`
+      : 'Sin georreferencia';
+
+    const fechaStr = new Date(r.creadoEn).toLocaleString('es-MX', {
+      dateStyle: 'short',
+      timeStyle: 'short'
+    });
+
+    const fotoHtml = r.evidenciaFotografica && r.evidenciaFotografica.dataUrl
+      ? `<img src="${r.evidenciaFotografica.dataUrl}" alt="Evidencia de ${r.titulo}" class="card-img-preview" loading="lazy" />`
+      : '';
+
+    return `
+      <article class="report-card" data-id="${r.id}">
+        <div class="card-header-row">
+          <span class="card-category-badge" style="border-left: 3px solid ${severidadColores[r.severidad] || '#fff'}">
+            ${r.categoria.replace('_', ' ')}
+          </span>
+          <span class="card-status-badge status-${r.estatus}">
+            ${estatusIcons[r.estatus] || '•'} ${estatusLabels[r.estatus] || r.estatus}
+          </span>
+        </div>
+
+        <h3 class="card-title">${escapeHtml(r.titulo)}</h3>
+        <p class="card-desc">${escapeHtml(r.descripcion)}</p>
+
+        ${fotoHtml}
+
+        <div class="card-meta-row">
+          <span class="meta-item">📍 ${coordStr}</span>
+          <span class="meta-item">🕒 ${fechaStr}</span>
+          <span class="meta-item" style="color: ${severidadColores[r.severidad]}; font-weight: 700;">
+            Nivel: ${r.severidad.toUpperCase()}
+          </span>
+        </div>
+      </article>
+    `;
+  }).join('');
+}
+
+/**
+ * 5. ACTUALIZAR MÉTRICAS DE PERSISTENCIA
+ */
+async function actualizarMetricasUI() {
+  const m = await dbStore.obtenerMetricas();
+  const elTotal = document.getElementById('stat-total');
+  const elRetenidos = document.getElementById('stat-retenidos');
+  const elSincronizados = document.getElementById('stat-sincronizados');
+  const elResueltos = document.getElementById('stat-resueltos');
+
+  if (elTotal) elTotal.textContent = m.total;
+  if (elRetenidos) elRetenidos.textContent = m.pendientes;
+  if (elSincronizados) elSincronizados.textContent = m.sincronizados;
+  if (elResueltos) elResueltos.textContent = m.resueltos;
+}
+
+/**
+ * 6. CONFIGURACIÓN DE SENSORES DE HARDWARE (CÁMARA Y GPS)
+ */
+function configurarSensoresHardware() {
+  // GPS
+  const btnGps = document.getElementById('btn-capturar-gps');
+  const gpsInfo = document.getElementById('gps-resultado-info');
+
+  if (btnGps) {
+    btnGps.addEventListener('click', async () => {
+      btnGps.disabled = true;
+      btnGps.innerHTML = '🛰️ Consultando Satélites...';
+      gpsInfo.innerHTML = '<span style="color: var(--utm-green-light)">Activando sensor GPS de alta precisión...</span>';
+
+      try {
+        const coords = await GeolocationHardware.capturarCoordenadas();
+        estadoUI.coordenadasCapturadas = coords;
+        gpsInfo.innerHTML = `
+          <strong style="color: var(--utm-green-light)">✅ Coordenadas Fijadas:</strong><br>
+          Latitud: <b>${coords.latitud}</b> | Longitud: <b>${coords.longitud}</b><br>
+          Margen de error GPS: <b>±${coords.precision} metros</b>
+        `;
+        mostrarToast('GPS: Posicionamiento satelital fijado.', 'success');
+      } catch (err) {
+        gpsInfo.innerHTML = `<span style="color: var(--color-critico)">❌ ${err.message}</span>`;
+        mostrarToast(err.message, 'error');
+      } finally {
+        btnGps.disabled = false;
+        btnGps.innerHTML = '📍 Adquirir Coordenadas GPS';
+      }
+    });
+  }
+
+  // CÁMARA
+  const btnIniciarCamara = document.getElementById('btn-iniciar-camara');
+  const btnDisparar = document.getElementById('btn-disparar-foto');
+  const btnSwitch = document.getElementById('btn-switch-camara');
+  const visor = document.getElementById('camera-viewport');
+  const videoElem = document.getElementById('camera-stream');
+  const fotoPreview = document.getElementById('foto-preview-resultado');
+  const inputFallback = document.getElementById('input-foto-fallback');
+
+  if (btnIniciarCamara) {
+    btnIniciarCamara.addEventListener('click', async () => {
+      try {
+        visor.style.display = 'block';
+        await camera.iniciarVisor(videoElem);
+        mostrarToast('Cámara iniciada.', 'info');
+      } catch (err) {
+        mostrarToast('Visor en vivo no disponible. Abriendo selector de captura.', 'warning');
+        inputFallback.click();
+      }
+    });
+  }
+
+  if (btnDisparar) {
+    btnDisparar.addEventListener('click', () => {
+      try {
+        const snapshot = camera.capturarInstantanea();
+        estadoUI.evidenciaFotografica = snapshot;
+        camera.detenerVisor();
+        visor.style.display = 'none';
+
+        fotoPreview.innerHTML = `
+          <img src="${snapshot.dataUrl}" style="max-height: 160px; border-radius: 8px; border: 1px solid var(--border-color); margin-top: 8px;" />
+          <p style="font-size: 0.75rem; color: var(--text-muted); margin-top: 4px;">
+            Evidencia comprimida en WebP: <b>${snapshot.tamanioKB} KB</b> (${snapshot.dimensiones})
+          </p>
+        `;
+        mostrarToast('Fotografía capturada y comprimida.', 'success');
+      } catch (e) {
+        mostrarToast(e.message, 'error');
+      }
+    });
+  }
+
+  if (btnSwitch) {
+    btnSwitch.addEventListener('click', async () => {
+      await camera.alternarCamara();
+    });
+  }
+
+  // Fallback de selector de archivo
+  if (inputFallback) {
+    inputFallback.addEventListener('change', async (e) => {
+      if (e.target.files && e.target.files[0]) {
+        const snapshot = await CameraHardware.procesarArchivoImagen(e.target.files[0]);
+        estadoUI.evidenciaFotografica = snapshot;
+        fotoPreview.innerHTML = `
+          <img src="${snapshot.dataUrl}" style="max-height: 160px; border-radius: 8px; border: 1px solid var(--border-color); margin-top: 8px;" />
+          <p style="font-size: 0.75rem; color: var(--text-muted); margin-top: 4px;">
+            Fotografía cargada: <b>${snapshot.tamanioKB} KB</b> (${snapshot.dimensiones})
+          </p>
+        `;
+      }
+    });
+  }
+}
+
+/**
+ * 7. FORMULARIO DE NUEVO REPORTE
+ */
+function configurarFormularioReporte() {
+  const form = document.getElementById('form-nuevo-reporte');
+  if (!form) return;
+
+  form.addEventListener('submit', async (e) => {
+    e.preventDefault();
+
+    const titulo = document.getElementById('rep-titulo').value.trim();
+    const categoria = document.getElementById('rep-categoria').value;
+    const severidad = document.getElementById('rep-severidad').value;
+    const descripcion = document.getElementById('rep-descripcion').value.trim();
+
+    if (!titulo || !descripcion) {
+      mostrarToast('Por favor completa el título y la descripción.', 'error');
+      return;
+    }
+
+    // Coordenadas por defecto si el usuario no activó el GPS
+    const coordenadas = estadoUI.coordenadasCapturadas || {
+      latitud: 20.9385,
+      longitud: -89.6247,
+      precision: 10.0,
+      altitud: null,
+      timestamp: Date.now()
+    };
+
+    const nuevoReporte = {
+      titulo,
+      categoria,
+      severidad,
+      descripcion,
+      coordenadas,
+      evidenciaFotografica: estadoUI.evidenciaFotografica,
+      estatus: 'local_retenido',
+      creadoEn: new Date().toISOString()
+    };
+
+    // 1. Guardar en IndexedDB (Transaccional Asíncrono - CERO localStorage)
+    const guardado = await dbStore.guardarReporte(nuevoReporte);
+
+    // 2. Programar Background Sync
+    await BackgroundSyncManager.solicitarSincronizacion();
+
+    // 3. Resetear formulario
+    form.reset();
+    estadoUI.coordenadasCapturadas = null;
+    estadoUI.evidenciaFotografica = null;
+    document.getElementById('gps-resultado-info').innerHTML = 'Coordenadas pendientes de adquisición';
+    document.getElementById('foto-preview-resultado').innerHTML = '';
+
+    mostrarToast(`✅ Reporte #${guardado.id} retenido en IndexedDB local.`, 'success');
+
+    // 4. Actualizar tablero y regresar a la vista principal
+    await actualizarMetricasUI();
+    await cargarReportesEnUI();
+    document.querySelector('.nav-item[data-target="vista-tablero"]').click();
+  });
+
+  // Filtros de categoría en el tablero
+  const chips = document.querySelectorAll('.chip-filter');
+  chips.forEach(chip => {
+    chip.addEventListener('click', () => {
+      chips.forEach(c => c.classList.remove('active'));
+      chip.classList.add('active');
+      estadoUI.filtroActual = chip.getAttribute('data-categoria');
+      cargarReportesEnUI();
+    });
+  });
+}
+
+/**
+ * 8. CENTRO DE CONTROL OFFLINE, SYNC Y PUSH (Semanas 3 y 4)
+ */
+function configurarCentroControlSync() {
+  // Simulador de Modo Avión
+  const btnToggleModoAvion = document.getElementById('btn-toggle-modo-avion');
+  if (btnToggleModoAvion) {
+    btnToggleModoAvion.addEventListener('click', () => {
+      estadoUI.modoAvionSimulado = !estadoUI.modoAvionSimulado;
+      btnToggleModoAvion.textContent = estadoUI.modoAvionSimulado 
+        ? '✈️ Salir de Modo Avión' 
+        : '✈️ Simular Modo Avión (Desconectar)';
+      
+      window.dispatchEvent(new Event(estadoUI.modoAvionSimulado ? 'offline' : 'online'));
+    });
+  }
+
+  // Sincronización Manual Forzada
+  const btnForzarSync = document.getElementById('btn-forzar-sync');
+  if (btnForzarSync) {
+    btnForzarSync.addEventListener('click', async () => {
+      btnForzarSync.disabled = true;
+      btnForzarSync.textContent = '🔄 Sincronizando...';
+
+      const res = await BackgroundSyncManager.procesarColaDirecta();
+      mostrarToast(`Sincronización manual: ${res.despachados} despachados, ${res.pendientes} pendientes.`, 'info');
+
+      await actualizarMetricasUI();
+      await cargarReportesEnUI();
+      await refrescarColaSyncUI();
+
+      btnForzarSync.disabled = false;
+      btnForzarSync.textContent = '🚀 Forzar Sincronización Inmediata';
+    });
+  }
+
+  // Actualizar indicador de permiso
+  const badgePermiso = document.getElementById('badge-permiso-notif');
+  function refrescarBadgePermiso() {
+    if (!badgePermiso) return;
+    const estado = ('Notification' in window) ? Notification.permission : 'no_soportado';
+    if (estado === 'granted') {
+      badgePermiso.innerHTML = '✅ Concedido';
+      badgePermiso.style.color = 'var(--utm-green-light)';
+    } else if (estado === 'denied') {
+      badgePermiso.innerHTML = '❌ Bloqueado';
+      badgePermiso.style.color = 'var(--color-critico)';
+    } else {
+      badgePermiso.innerHTML = '⏳ Pendiente';
+      badgePermiso.style.color = 'var(--status-retenido)';
+    }
+  }
+  refrescarBadgePermiso();
+
+  // Botón para solicitar permisos explícitamente
+  const btnPermiso = document.getElementById('btn-solicitar-permiso-notif');
+  if (btnPermiso) {
+    btnPermiso.addEventListener('click', async () => {
+      try {
+        const resultado = await Notification.requestPermission();
+        refrescarBadgePermiso();
+        if (resultado === 'granted') {
+          mostrarToast('¡Permiso de notificaciones activado con éxito!', 'success');
+        } else {
+          mostrarToast('Permiso denegado. Habilítalo en el candado 🔒 de tu navegador.', 'error');
+        }
+      } catch (e) {
+        mostrarToast(e.message, 'error');
+      }
+    });
+  }
+
+  // Notificación Push de Demostración
+  const btnPushDemo = document.getElementById('btn-demo-push');
+  if (btnPushDemo) {
+    btnPushDemo.addEventListener('click', async () => {
+      try {
+        await PushNotificationService.simularAlertaResolucion('REP-UTM-002', 'Fuga de agua potable frente al Campus UTM');
+        mostrarToast('📲 Alerta push despachada al sistema operativo.', 'success');
+        refrescarBadgePermiso();
+      } catch (err) {
+        mostrarToast(err.message, 'error');
+      }
+    });
+  }
+}
+
+/**
+ * Refresca la tabla de la cola de sincronización en la vista de control
+ */
+async function refrescarColaSyncUI() {
+  const contenedor = document.getElementById('tabla-cola-sync');
+  if (!contenedor) return;
+
+  const cola = await dbStore.obtenerColaSync();
+
+  if (cola.length === 0) {
+    contenedor.innerHTML = '<p style="color: var(--utm-green-light); font-size: 0.85rem;">✨ Cola vacía. Todos los reportes han sido sincronizados.</p>';
+    return;
+  }
+
+  contenedor.innerHTML = `
+    <div style="font-size: 0.8rem; overflow-x: auto;">
+      <table style="width: 100%; border-collapse: collapse; text-align: left;">
+        <thead>
+          <tr style="border-bottom: 1px solid var(--border-color); color: var(--text-muted);">
+            <th style="padding: 6px;">ID</th>
+            <th style="padding: 6px;">Título</th>
+            <th style="padding: 6px;">Intentos</th>
+            <th style="padding: 6px;">Fecha Retención</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${cola.map(c => `
+            <tr style="border-bottom: 1px solid rgba(255,255,255,0.05);">
+              <td style="padding: 6px; font-weight: 700; color: #fff;">${c.idReporte}</td>
+              <td style="padding: 6px;">${escapeHtml(c.payload.titulo)}</td>
+              <td style="padding: 6px;">${c.intentos}</td>
+              <td style="padding: 6px; color: var(--text-muted);">${new Date(c.creadoEn).toLocaleTimeString()}</td>
+            </tr>
+          `).join('')}
+        </tbody>
+      </table>
+    </div>
+  `;
+}
+
+/**
+ * Sistema Toast de retroalimentación en pantalla
+ */
+function mostrarToast(mensaje, tipo = 'info') {
+  const container = document.getElementById('toast-container');
+  if (!container) return;
+
+  const toast = document.createElement('div');
+  toast.className = `toast toast-${tipo}`;
+  
+  const iconos = {
+    'info': 'ℹ️',
+    'success': '✅',
+    'warning': '⚠️',
+    'error': '❌'
+  };
+
+  toast.innerHTML = `<span>${iconos[tipo] || '•'}</span> <span>${escapeHtml(mensaje)}</span>`;
+  container.appendChild(toast);
+
+  setTimeout(() => {
+    toast.style.opacity = '0';
+    toast.style.transform = 'translateY(-10px)';
+    toast.style.transition = 'all 0.3s ease';
+    setTimeout(() => toast.remove(), 300);
+  }, 4000);
+}
+
+function escapeHtml(str) {
+  if (!str) return '';
+  return String(str)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#039;');
+}
+
+
+</script>
+</body>
+
+</html>
