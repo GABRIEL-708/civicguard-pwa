@@ -1,6 +1,4 @@
 {
-  "version": 2,
-  "public": true,
   "headers": [
     {
       "source": "/sw.js",
@@ -12,15 +10,6 @@
         {
           "key": "Service-Worker-Allowed",
           "value": "/"
-        }
-      ]
-    },
-    {
-      "source": "/(.*)",
-      "headers": [
-        {
-          "key": "X-Content-Type-Options",
-          "value": "nosniff"
         }
       ]
     }
