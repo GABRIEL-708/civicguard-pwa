@@ -1,0 +1,479 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>00_DEFINICION_Y_JUSTIFICACION_ARQUITECTURA.md</title>
+<meta http-equiv="Content-type" content="text/html;charset=UTF-8">
+
+<style>
+/* https://github.com/microsoft/vscode/blob/master/extensions/markdown-language-features/media/markdown.css */
+/*---------------------------------------------------------------------------------------------
+ *  Copyright (c) Microsoft Corporation. All rights reserved.
+ *  Licensed under the MIT License. See License.txt in the project root for license information.
+ *--------------------------------------------------------------------------------------------*/
+
+body {
+	font-family: var(--vscode-markdown-font-family, -apple-system, BlinkMacSystemFont, "Segoe WPC", "Segoe UI", "Ubuntu", "Droid Sans", sans-serif);
+	font-size: var(--vscode-markdown-font-size, 14px);
+	padding: 0 26px;
+	line-height: var(--vscode-markdown-line-height, 22px);
+	word-wrap: break-word;
+}
+
+#code-csp-warning {
+	position: fixed;
+	top: 0;
+	right: 0;
+	color: white;
+	margin: 16px;
+	text-align: center;
+	font-size: 12px;
+	font-family: sans-serif;
+	background-color:#444444;
+	cursor: pointer;
+	padding: 6px;
+	box-shadow: 1px 1px 1px rgba(0,0,0,.25);
+}
+
+#code-csp-warning:hover {
+	text-decoration: none;
+	background-color:#007acc;
+	box-shadow: 2px 2px 2px rgba(0,0,0,.25);
+}
+
+body.scrollBeyondLastLine {
+	margin-bottom: calc(100vh - 22px);
+}
+
+body.showEditorSelection .code-line {
+	position: relative;
+}
+
+body.showEditorSelection .code-active-line:before,
+body.showEditorSelection .code-line:hover:before {
+	content: "";
+	display: block;
+	position: absolute;
+	top: 0;
+	left: -12px;
+	height: 100%;
+}
+
+body.showEditorSelection li.code-active-line:before,
+body.showEditorSelection li.code-line:hover:before {
+	left: -30px;
+}
+
+.vscode-light.showEditorSelection .code-active-line:before {
+	border-left: 3px solid rgba(0, 0, 0, 0.15);
+}
+
+.vscode-light.showEditorSelection .code-line:hover:before {
+	border-left: 3px solid rgba(0, 0, 0, 0.40);
+}
+
+.vscode-light.showEditorSelection .code-line .code-line:hover:before {
+	border-left: none;
+}
+
+.vscode-dark.showEditorSelection .code-active-line:before {
+	border-left: 3px solid rgba(255, 255, 255, 0.4);
+}
+
+.vscode-dark.showEditorSelection .code-line:hover:before {
+	border-left: 3px solid rgba(255, 255, 255, 0.60);
+}
+
+.vscode-dark.showEditorSelection .code-line .code-line:hover:before {
+	border-left: none;
+}
+
+.vscode-high-contrast.showEditorSelection .code-active-line:before {
+	border-left: 3px solid rgba(255, 160, 0, 0.7);
+}
+
+.vscode-high-contrast.showEditorSelection .code-line:hover:before {
+	border-left: 3px solid rgba(255, 160, 0, 1);
+}
+
+.vscode-high-contrast.showEditorSelection .code-line .code-line:hover:before {
+	border-left: none;
+}
+
+img {
+	max-width: 100%;
+	max-height: 100%;
+}
+
+a {
+	text-decoration: none;
+}
+
+a:hover {
+	text-decoration: underline;
+}
+
+a:focus,
+input:focus,
+select:focus,
+textarea:focus {
+	outline: 1px solid -webkit-focus-ring-color;
+	outline-offset: -1px;
+}
+
+hr {
+	border: 0;
+	height: 2px;
+	border-bottom: 2px solid;
+}
+
+h1 {
+	padding-bottom: 0.3em;
+	line-height: 1.2;
+	border-bottom-width: 1px;
+	border-bottom-style: solid;
+}
+
+h1, h2, h3 {
+	font-weight: normal;
+}
+
+table {
+	border-collapse: collapse;
+}
+
+table > thead > tr > th {
+	text-align: left;
+	border-bottom: 1px solid;
+}
+
+table > thead > tr > th,
+table > thead > tr > td,
+table > tbody > tr > th,
+table > tbody > tr > td {
+	padding: 5px 10px;
+}
+
+table > tbody > tr + tr > td {
+	border-top: 1px solid;
+}
+
+blockquote {
+	margin: 0 7px 0 5px;
+	padding: 0 16px 0 10px;
+	border-left-width: 5px;
+	border-left-style: solid;
+}
+
+code {
+	font-family: Menlo, Monaco, Consolas, "Droid Sans Mono", "Courier New", monospace, "Droid Sans Fallback";
+	font-size: 1em;
+	line-height: 1.357em;
+}
+
+body.wordWrap pre {
+	white-space: pre-wrap;
+}
+
+pre:not(.hljs),
+pre.hljs code > div {
+	padding: 16px;
+	border-radius: 3px;
+	overflow: auto;
+}
+
+pre code {
+	color: var(--vscode-editor-foreground);
+	tab-size: 4;
+}
+
+/** Theming */
+
+.vscode-light pre {
+	background-color: rgba(220, 220, 220, 0.4);
+}
+
+.vscode-dark pre {
+	background-color: rgba(10, 10, 10, 0.4);
+}
+
+.vscode-high-contrast pre {
+	background-color: rgb(0, 0, 0);
+}
+
+.vscode-high-contrast h1 {
+	border-color: rgb(0, 0, 0);
+}
+
+.vscode-light table > thead > tr > th {
+	border-color: rgba(0, 0, 0, 0.69);
+}
+
+.vscode-dark table > thead > tr > th {
+	border-color: rgba(255, 255, 255, 0.69);
+}
+
+.vscode-light h1,
+.vscode-light hr,
+.vscode-light table > tbody > tr + tr > td {
+	border-color: rgba(0, 0, 0, 0.18);
+}
+
+.vscode-dark h1,
+.vscode-dark hr,
+.vscode-dark table > tbody > tr + tr > td {
+	border-color: rgba(255, 255, 255, 0.18);
+}
+
+</style>
+
+<style>
+/* Tomorrow Theme */
+/* http://jmblog.github.com/color-themes-for-google-code-highlightjs */
+/* Original theme - https://github.com/chriskempson/tomorrow-theme */
+
+/* Tomorrow Comment */
+.hljs-comment,
+.hljs-quote {
+	color: #8e908c;
+}
+
+/* Tomorrow Red */
+.hljs-variable,
+.hljs-template-variable,
+.hljs-tag,
+.hljs-name,
+.hljs-selector-id,
+.hljs-selector-class,
+.hljs-regexp,
+.hljs-deletion {
+	color: #c82829;
+}
+
+/* Tomorrow Orange */
+.hljs-number,
+.hljs-built_in,
+.hljs-builtin-name,
+.hljs-literal,
+.hljs-type,
+.hljs-params,
+.hljs-meta,
+.hljs-link {
+	color: #f5871f;
+}
+
+/* Tomorrow Yellow */
+.hljs-attribute {
+	color: #eab700;
+}
+
+/* Tomorrow Green */
+.hljs-string,
+.hljs-symbol,
+.hljs-bullet,
+.hljs-addition {
+	color: #718c00;
+}
+
+/* Tomorrow Blue */
+.hljs-title,
+.hljs-section {
+	color: #4271ae;
+}
+
+/* Tomorrow Purple */
+.hljs-keyword,
+.hljs-selector-tag {
+	color: #8959a8;
+}
+
+.hljs {
+	display: block;
+	overflow-x: auto;
+	color: #4d4d4c;
+	padding: 0.5em;
+}
+
+.hljs-emphasis {
+	font-style: italic;
+}
+
+.hljs-strong {
+	font-weight: bold;
+}
+</style>
+
+<style>
+/*
+ * Markdown PDF CSS
+ */
+
+ body {
+	font-family: -apple-system, BlinkMacSystemFont, "Segoe WPC", "Segoe UI", "Ubuntu", "Droid Sans", sans-serif, "Meiryo";
+	padding: 0 12px;
+}
+
+pre {
+	background-color: #f8f8f8;
+	border: 1px solid #cccccc;
+	border-radius: 3px;
+	overflow-x: auto;
+	white-space: pre-wrap;
+	overflow-wrap: break-word;
+}
+
+pre:not(.hljs) {
+	padding: 23px;
+	line-height: 19px;
+}
+
+blockquote {
+	background: rgba(127, 127, 127, 0.1);
+	border-color: rgba(0, 122, 204, 0.5);
+}
+
+.emoji {
+	height: 1.4em;
+}
+
+code {
+	font-size: 14px;
+	line-height: 19px;
+}
+
+/* for inline code */
+:not(pre):not(.hljs) > code {
+	color: #C9AE75; /* Change the old color so it seems less like an error */
+	font-size: inherit;
+}
+
+/* Page Break : use <div class="page"/> to insert page break
+-------------------------------------------------------- */
+.page {
+	page-break-after: always;
+}
+
+</style>
+
+<script src="https://unpkg.com/mermaid/dist/mermaid.min.js"></script>
+</head>
+<body>
+  <script>
+    mermaid.initialize({
+      startOnLoad: true,
+      theme: document.body.classList.contains('vscode-dark') || document.body.classList.contains('vscode-high-contrast')
+          ? 'dark'
+          : 'default'
+    });
+  </script>
+<h1 id="documento-de-definici%C3%B3n-de-proyecto-y-justificaci%C3%B3n-arquitect%C3%B3nica">Documento de Definición de Proyecto y Justificación Arquitectónica</h1>
+<h2 id="proyecto-integrador-2-civicguard-pwa">Proyecto Integrador 2: CivicGuard PWA</h2>
+<h3 id="sistema-de-gesti%C3%B3n-de-emergencias-e-incidencias-en-infraestructura-urbana">Sistema de Gestión de Emergencias e Incidencias en Infraestructura Urbana</h3>
+<hr>
+<h2 id="1-ficha-t%C3%A9cnica-del-proyecto">1. Ficha Técnica del Proyecto</h2>
+<table>
+<thead>
+<tr>
+<th style="text-align:left">Parámetro</th>
+<th style="text-align:left">Detalle</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align:left"><strong>Institución</strong></td>
+<td style="text-align:left">Universidad Tecnológica Metropolitana (UTM)</td>
+</tr>
+<tr>
+<td style="text-align:left"><strong>Programa Académico</strong></td>
+<td style="text-align:left">Ingeniería en Desarrollo y Gestión de Software</td>
+</tr>
+<tr>
+<td style="text-align:left"><strong>Asignatura</strong></td>
+<td style="text-align:left">Proyecto Integrador 2 (Cuatrimestre 10)</td>
+</tr>
+<tr>
+<td style="text-align:left"><strong>Nombre del Sistema</strong></td>
+<td style="text-align:left"><strong>CivicGuard PWA</strong></td>
+</tr>
+<tr>
+<td style="text-align:left"><strong>Tipo de Sistema</strong></td>
+<td style="text-align:left">Progressive Web Application (PWA) de Nivel Empresarial Headless</td>
+</tr>
+<tr>
+<td style="text-align:left"><strong>Entorno Operativo</strong></td>
+<td style="text-align:left">Dispositivos móviles y de escritorio en condiciones de red hostil o nula (Offline-First)</td>
+</tr>
+</tbody>
+</table>
+<hr>
+<h2 id="2-definici%C3%B3n-del-problema-y-caso-de-estudio">2. Definición del Problema y Caso de Estudio</h2>
+<p>Las ciudades modernas se enfrentan cotidianamente a fallas críticas en su infraestructura urbana: fugas de agua potable o drenaje, baches de alta peligrosidad, colapso de luminarias públicas, caídas de árboles y postes, semáforos fuera de servicio o contingencias por desastres naturales.</p>
+<p>Los problemas habituales de los canales de reporte convencionales son:</p>
+<ol>
+<li><strong>Pérdida de conectividad en campo</strong>: Cuadrillas municipales y ciudadanos frecuentemente transitan por áreas con cobertura celular deficiente o intermitente. Los formularios web estándar fallan al perder la conexión, perdiendo los datos capturados y la evidencia fotográfica.</li>
+<li><strong>Fricción de adopción en apps nativas</strong>: Requerir que el ciudadano descargue una aplicación de 80-150 MB desde tiendas de aplicaciones (Google Play / App Store) antes de reportar un bache o un poste caído genera tasas de abandono superiores al 70%.</li>
+<li><strong>Falta de metadatos precisos</strong>: Los reportes por llamada o redes sociales carecen de geolocalización satelital exacta y fotografías verificadas en el momento del incidente.</li>
+<li><strong>Alto consumo de recursos y lentitud</strong>: Portales gubernamentales pesados, basados en arquitecturas monolíticas con renderizado dependiente del servidor, colapsan ante emergencias masivas.</li>
+</ol>
+<p><strong>CivicGuard PWA</strong> se concibe como una plataforma resiliente, accesible instantáneamente mediante un enlace web o código QR, capaz de instalarse en la pantalla de inicio del dispositivo sin pasar por tiendas de aplicaciones, y con la capacidad operativa de capturar incidencias, geolocalización satelital y evidencia fotográfica <strong>aún en ausencia total de internet (Modo Avión estricto)</strong>, sincronizando la información automáticamente en segundo plano cuando el dispositivo restablezca la conectividad.</p>
+<hr>
+<h2 id="3-justificaci%C3%B3n-de-la-arquitectura-seleccionada">3. Justificación de la Arquitectura Seleccionada</h2>
+<p>Para cumplir con las exigencias de disponibilidad, ligereza y acceso a hardware, se seleccionó una <strong>Arquitectura Web Progresiva Desacoplada (Headless PWA)</strong> con patrón <strong>Application Shell (App Shell)</strong>.</p>
+<h3 id="31-%C2%BFpor-qu%C3%A9-pwa-frente-a-otras-alternativas">3.1. ¿Por qué PWA frente a otras alternativas?</h3>
+<ul>
+<li><strong>Cero fricción de instalación</strong>: Se distribuye vía web estándar bajo protocolo HTTPS seguro, compatible con Android, iOS, Windows y macOS.</li>
+<li><strong>Resiliencia Offline-First</strong>: Mediante hilos de ejecución en segundo plano (<strong>Service Workers</strong>), la aplicación intercepted solicitudes de red y despacha recursos instantáneamente desde la <strong>Cache API</strong>, garantizando que la aplicación abra en menos de 1 segundo incluso en frío o sin conexión.</li>
+<li><strong>Persistencia local asíncrona avanzada</strong>: A través de <strong>IndexedDB</strong>, los reportes, estados y fotografías (en formato binario Blob/Base64) se retienen transaccionalmente en el dispositivo sin bloquear el hilo principal de renderizado (UI thread). Se prohíbe el uso de <code>localStorage</code> para salvaguardar la fluidez a 60 fps.</li>
+<li><strong>Acceso a Hardware Nativo</strong>: Uso directo de la <strong>Geolocation API</strong> (W3C) para fijar latitud, longitud y precisión métrica, y de la <strong>MediaDevices API / HTML Media Capture</strong> para accesar a la cámara del dispositivo móvil.</li>
+<li><strong>Sincronización en Segundo Plano</strong>: Uso de la <strong>Background Sync API</strong> (<code>sync</code> event) para encolar operaciones mutables y ejecutarlas sin intervención del usuario en cuanto el navegador detecte restauración de red (<code>navigator.onLine</code>).</li>
+</ul>
+<h3 id="32-patr%C3%B3n-application-shell">3.2. Patrón Application Shell</h3>
+<p>La arquitectura separa estrictamente el cascarón visual (interfaz estática, navegación, hojas de estilo, iconos y lógica base) de los datos dinámicos (reportes, estadísticas, catálogos):</p>
+<ul>
+<li><strong>El Shell (Cascarón)</strong>: Es inmutable y se almacena en la <strong>Cache API</strong> durante la fase de instalación del Service Worker.</li>
+<li><strong>Los Datos</strong>: Se procesan dinámicamente mediante renderizado del lado del cliente (Client-Side Rendering) y se respaldan en <strong>IndexedDB</strong>.</li>
+</ul>
+<pre class="hljs"><code><div>+-------------------------------------------------------------+
+|                     CivicGuard PWA UI                       |
+|  +-------------------------------------------------------+  |
+|  |           Application Shell (Header, Nav, FAB)        |  |
+|  +-------------------------------------------------------+  |
+|  |           Vistas Dinámicas (CSR / Placeholders)       |  |
+|  +-------------------------------------------------------+  |
++-------------------------------------------------------------+
+                              |
+                     [ Service Worker ]
+              (Intercepta todas las peticiones)
+                 /                         \
+                /                           \
+       [ Cache API ]                   [ IndexedDB ]
+  (Assets inmutables Shell:        (Reportes locales JSON,
+   HTML, CSS, JS, Iconos)           Fotos Blob, Cola Sync)
+                \                           /
+                 \                         /
+          +--------------------------------------+
+          |   Network / API Externa (Headless)   |
+          |       (Solo cuando hay red)          |
+          +--------------------------------------+
+</div></code></pre>
+<hr>
+<h2 id="4-requerimientos-de-alto-nivel-del-sistema">4. Requerimientos de Alto Nivel del Sistema</h2>
+<h3 id="41-requerimientos-funcionales">4.1. Requerimientos Funcionales</h3>
+<ol>
+<li><strong>RF-01: Registro de Incidencias Urbanas</strong>: Formulario para tipificar incidencias (Bacheo, Luminarias, Agua y Drenaje, Seguridad, Parques).</li>
+<li><strong>RF-02: Geolocalización Automática</strong>: Adquisición obligatoria de coordenadas GNSS (GPS) mediante la Geolocation API con retroalimentación visual al usuario.</li>
+<li><strong>RF-03: Evidencia Fotográfica</strong>: Captura de imagen desde la cámara o selector local, con previsualización y compresión ligera.</li>
+<li><strong>RF-04: Operatividad Offline Estricta</strong>: La app debe permitir navegar, crear reportes, tomar fotos y almacenar en IndexedDB con el dispositivo en Modo Avión.</li>
+<li><strong>RF-05: Sincronización Automática</strong>: Procesamiento de la cola de reportes pendientes al recuperar señal mediante Background Sync.</li>
+<li><strong>RF-06: Notificaciones Push</strong>: Recepción de alertas del sistema sobre cambios de estatus del reporte (&quot;Recibido&quot;, &quot;En Proceso&quot;, &quot;Solucionado&quot;).</li>
+<li><strong>RF-07: Instalabilidad</strong>: Cumplimiento íntegro de directivas para <code>Add to Home Screen</code> (A2HS) con Web App Manifest y Maskable Icons.</li>
+</ol>
+<h3 id="42-requerimientos-no-funcionales">4.2. Requerimientos No Funcionales</h3>
+<ol>
+<li><strong>RNF-01: No Bloqueo del Hilo Principal</strong>: Cero llamadas síncronas bloqueantes (<code>localStorage</code> estrictamente vetado).</li>
+<li><strong>RNF-02: Rendimiento Lighthouse</strong>: Puntuación $\ge 90/100$ en la categoría PWA y Rendimiento bajo perfil de red degradada (Slow 3G).</li>
+<li><strong>RNF-03: Seguridad (Contexto Seguro)</strong>: Despliegue mandatorio bajo HTTPS con certificados TLS vigentes y soporte a políticas de origen seguro (<code>isSecureContext = true</code>).</li>
+<li><strong>RNF-04: Diseño Adaptativo (Responsive)</strong>: Interfaz diseñada bajo la filosofía <em>Mobile-First</em>, optimizada para pantallas táctiles y teclado accesible.</li>
+</ol>
+
+</body>
+</html>
