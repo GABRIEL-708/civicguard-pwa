@@ -1,86 +1,73 @@
 /**
- * Service Worker Principal - CivicGuard PWA
- * Ubicación: Raíz (Scope: "/")
- * Universidad Tecnológica Metropolitana (UTM) - Proyecto Integrador 2
+ * Service Worker Principal - CivicGuard PWA (Robusto y Tolerante a Fallos)
+ * Scope: "/" | UTM Proyecto Integrador 2
  */
 
-const CACHE_VERSION = 'civicguard-shell-v1.0.2';
+const CACHE_VERSION = 'civicguard-shell-v1.0.5';
 
 const ASSETS_APP_SHELL = [
   '/',
   '/index.html',
   '/manifest.json',
-  '/css/shell.css',
-  '/js/app.js',
-  '/js/db/indexed-store.js',
-  '/js/db/supabase-client.js',
-  '/js/hardware/geolocation.js',
-  '/js/hardware/camera.js',
-  '/js/sync/background-sync.js',
-  '/js/notifications/push-service.js',
-  '/assets/icons/icon-72.png',
-  '/assets/icons/icon-96.png',
-  '/assets/icons/icon-128.png',
-  '/assets/icons/icon-144.png',
   '/assets/icons/icon-192.png',
   '/assets/icons/icon-512.png',
-  '/assets/icons/maskable-512.png',
-  '/assets/icons/badge-72.png'
+  '/assets/icons/maskable-512.png'
 ];
 
+// 1. INSTALL con cacheo resiliente (Promise.allSettled)
 self.addEventListener('install', (event) => {
-  console.log('[SW CivicGuard] ⚙️ Evento INSTALL iniciado. Cacheando Application Shell...');
+  console.log('[SW CivicGuard] ⚙️ Evento INSTALL iniciado.');
 
   event.waitUntil(
-    caches.open(CACHE_VERSION)
-      .then((cache) => {
-        return cache.addAll(ASSETS_APP_SHELL);
-      })
-      .then(() => {
-        return self.skipWaiting();
-      })
-      .catch((err) => {
-        console.warn('[SW CivicGuard] Cache partial warning:', err);
-        return self.skipWaiting();
-      })
+    caches.open(CACHE_VERSION).then(async (cache) => {
+      // Usamos Promise.allSettled para que si un asset falla, el Service Worker igual se instale con éxito
+      await Promise.allSettled(
+        ASSETS_APP_SHELL.map((asset) =>
+          fetch(asset)
+            .then((res) => {
+              if (res.ok) return cache.put(asset, res);
+            })
+            .catch((err) => console.warn('[SW Cache] Omitido:', asset))
+        )
+      );
+    }).then(() => {
+      console.log('[SW CivicGuard] ⚡ Activando inmediatamente con skipWaiting()');
+      return self.skipWaiting();
+    })
   );
 });
 
+// 2. ACTIVATE con toma de control inmediata
 self.addEventListener('activate', (event) => {
   console.log('[SW CivicGuard] 🚀 Evento ACTIVATE iniciado.');
-
   event.waitUntil(
-    caches.keys()
-      .then((cacheNames) => {
-        return Promise.all(
-          cacheNames.map((nombre) => {
-            if (nombre !== CACHE_VERSION) {
-              return caches.delete(nombre);
-            }
-          })
-        );
-      })
-      .then(() => {
-        return self.clients.claim();
-      })
+    caches.keys().then((keys) => {
+      return Promise.all(
+        keys.map((k) => {
+          if (k !== CACHE_VERSION) {
+            console.log('[SW CivicGuard] Purgando caché obsoleta:', k);
+            return caches.delete(k);
+          }
+        })
+      );
+    }).then(() => {
+      return self.clients.claim();
+    })
   );
 });
 
+// 3. FETCH
 self.addEventListener('fetch', (event) => {
   const url = new URL(event.request.url);
 
-  // APIs externas de Supabase o mock local -> Network-First
+  // Si es API externa o de Supabase -> Network First
   if (url.pathname.startsWith('/api/') || url.hostname.includes('supabase.co')) {
     event.respondWith(
       fetch(event.request).catch(() => {
-        return caches.match(event.request).then((fallback) => {
-          if (fallback) return fallback;
-          return new Response(JSON.stringify({
-            offline: true,
-            mensaje: 'Sistema operando en contingencia offline. Datos retenidos en IndexedDB.'
-          }), {
-            headers: { 'Content-Type': 'application/json' },
-            status: 200
+        return caches.match(event.request).then((res) => {
+          if (res) return res;
+          return new Response(JSON.stringify({ offline: true }), {
+            headers: { 'Content-Type': 'application/json' }
           });
         });
       })
@@ -88,132 +75,59 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
-  // Activos estáticos del Application Shell -> Cache-First
+  // Si es activo estático -> Cache First
   event.respondWith(
-    caches.match(event.request)
-      .then((respuestaCache) => {
-        if (respuestaCache) {
-          return respuestaCache;
+    caches.match(event.request).then((cached) => {
+      if (cached) return cached;
+      return fetch(event.request).then((networkRes) => {
+        if (networkRes && networkRes.status === 200 && networkRes.type === 'basic') {
+          const clone = networkRes.clone();
+          caches.open(CACHE_VERSION).then((c) => c.put(event.request, clone));
         }
-
-        return fetch(event.request)
-          .then((respuestaRed) => {
-            if (!respuestaRed || respuestaRed.status !== 200 || respuestaRed.type !== 'basic') {
-              return respuestaRed;
-            }
-
-            const respuestaParaCache = respuestaRed.clone();
-            caches.open(CACHE_VERSION).then((cache) => {
-              cache.put(event.request, respuestaParaCache);
-            });
-
-            return respuestaRed;
-          })
-          .catch(() => {
-            if (event.request.mode === 'navigate') {
-              return caches.match('/index.html');
-            }
-          });
-      })
+        return networkRes;
+      }).catch(() => {
+        if (event.request.mode === 'navigate') {
+          return caches.match('/index.html') || caches.match('/');
+        }
+      });
+    })
   );
 });
 
-self.addEventListener('sync', (event) => {
-  if (event.tag === 'sync-civic-reports') {
-    event.waitUntil(
-      despacharColaBackgroundSync()
-    );
-  }
-});
-
-async function despacharColaBackgroundSync() {
-  try {
-    const db = await new Promise((resolve, reject) => {
-      const req = indexedDB.open('CivicGuardDB', 1);
-      req.onsuccess = () => resolve(req.result);
-      req.onerror = () => reject(req.error);
-    });
-
-    const tx = db.transaction('cola_sincronizacion', 'readonly');
-    const store = tx.objectStore('cola_sincronizacion');
-    const items = await new Promise((resolve, reject) => {
-      const req = store.getAll();
-      req.onsuccess = () => resolve(req.result || []);
-      req.onerror = () => reject(req.error);
-    });
-
-    if (items.length === 0) return;
-
-    for (const item of items) {
-      try {
-        const res = await fetch('https://wjfbcmkgomxoqjtkeaoe.supabase.co/rest/v1/reportes', {
-          method: 'POST',
-          headers: {
-            'apikey': 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6IndqZmJjbWtnb214b3FqdGtlYW9lIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTUwMTk1OTIsImV4cCI6MjExMDU5NTU5Mn0.LgehF5fvMGQFly0DbKGezDnCI4gZYmod0iiOHRYcTGs',
-            'Authorization': 'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6IndqZmJjbWtnb214b3FqdGtlYW9lIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTUwMTk1OTIsImV4cCI6MjExMDU5NTU5Mn0.LgehF5fvMGQFly0DbKGezDnCI4gZYmod0iiOHRYcTGs',
-            'Content-Type': 'application/json'
-          },
-          body: JSON.stringify(item.payload)
-        });
-
-        if (res.ok) {
-          const updateTx = db.transaction(['reportes', 'cola_sincronizacion'], 'readwrite');
-          updateTx.objectStore('cola_sincronizacion').delete(item.idReporte);
-        }
-      } catch (e) {
-        console.warn('[SW Background Sync] Error en reintento diferido:', e);
-      }
-    }
-  } catch (err) {
-    console.error('[SW Background Sync] Error:', err);
-  }
-}
-
+// 4. NOTIFICACIONES PUSH
 self.addEventListener('push', (event) => {
-  let datos = {
+  let data = {
     titulo: 'Alerta Cívica Municipal',
-    mensaje: 'Se ha registrado una actualización en el estado de una incidencia.',
-    url: '/'
+    mensaje: 'Se ha registrado una actualización en el estado de una incidencia.'
   };
 
   if (event.data) {
     try {
-      datos = Object.assign(datos, event.data.json());
+      data = Object.assign(data, event.data.json());
     } catch (e) {
-      datos.mensaje = event.data.text();
+      data.mensaje = event.data.text();
     }
   }
 
-  const opciones = {
-    body: datos.mensaje,
-    icon: '/assets/icons/icon-192.png',
-    badge: '/assets/icons/badge-72.png',
-    vibrate: [200, 100, 200],
-    data: { url: datos.url }
-  };
-
   event.waitUntil(
-    self.registration.showNotification(datos.titulo, opciones)
+    self.registration.showNotification(data.titulo, {
+      body: data.mensaje,
+      icon: '/assets/icons/icon-192.png',
+      badge: '/assets/icons/badge-72.png',
+      vibrate: [200, 100, 200]
+    })
   );
 });
 
 self.addEventListener('notificationclick', (event) => {
   event.notification.close();
-  const urlDestino = (event.notification.data && event.notification.data.url) || '/';
-
   event.waitUntil(
-    clients.matchAll({ type: 'window', includeUncontrolled: true })
-      .then((clientes) => {
-        for (const cliente of clientes) {
-          if (cliente.url.includes(self.location.origin) && 'focus' in cliente) {
-            cliente.focus();
-            cliente.navigate(urlDestino);
-            return;
-          }
-        }
-        if (clients.openWindow) {
-          return clients.openWindow(urlDestino);
-        }
-      })
+    clients.matchAll({ type: 'window', includeUncontrolled: true }).then((cl) => {
+      if (cl.length > 0) {
+        cl[0].focus();
+      } else {
+        clients.openWindow('/');
+      }
+    })
   );
 });

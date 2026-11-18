@@ -723,6 +723,9 @@
       </div>
     </div>
     <div class="header-actions">
+      <button id="btn-instalar-header" class="btn-secondary" style="display: none; padding: 6px 12px; font-size: 0.78rem; background: var(--utm-green); border: none; font-weight: 700;" title="Instalar Aplicación en este dispositivo">
+        📥 Instalar App
+      </button>
       <button id="btn-sync-quick" class="btn-icon" title="Estado de Sincronización" aria-label="Sincronizar">
         <svg viewBox="0 0 24 24" width="20" height="20" stroke="currentColor" stroke-width="2" fill="none">
           <path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38l5.67-5.67" />
@@ -957,6 +960,31 @@
     </section>
 
   </main>
+
+  <!-- BANNER FLOTANTE DE INSTALACIÓN PWA (A2HS) -->
+  <div id="pwa-install-banner" style="display: none; position: fixed; bottom: 80px; left: 16px; right: 16px; max-width: 440px; margin: 0 auto; background: rgba(15, 23, 42, 0.95); backdrop-filter: blur(16px); border: 1px solid var(--utm-green); border-radius: 12px; padding: 14px 16px; box-shadow: 0 10px 25px -5px rgba(0,0,0,0.6); z-index: 1500; align-items: center; justify-content: space-between; gap: 12px; animation: slideUpBanner 0.4s ease-out;">
+    <div style="display: flex; align-items: center; gap: 10px;">
+      <div style="background: var(--utm-green); width: 36px; height: 36px; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 1.2rem;">
+        📥
+      </div>
+      <div>
+        <p style="font-size: 0.88rem; font-weight: 700; color: #fff; margin: 0;">Instalar CivicGuard</p>
+        <p style="font-size: 0.72rem; color: var(--text-muted); margin: 0;">Úsala en pantalla completa y sin internet</p>
+      </div>
+    </div>
+    <div style="display: flex; align-items: center; gap: 6px;">
+      <button id="btn-pwa-dismiss" style="background: transparent; border: none; color: var(--text-muted); font-size: 1.1rem; cursor: pointer; padding: 4px 8px;">✕</button>
+      <button id="btn-pwa-install" class="btn-primary" style="padding: 8px 14px; font-size: 0.8rem; width: auto; box-shadow: none;">Instalar</button>
+    </div>
+  </div>
+
+  <style>
+    @keyframes slideUpBanner {
+      from { transform: translateY(30px); opacity: 0; }
+      to { transform: translateY(0); opacity: 1; }
+    }
+  </style>
+
 
   <!-- 4. BARRA DE NAVEGACIÓN INFERIOR (MOBILE SHELL) -->
   <nav class="bottom-nav" aria-label="Navegación principal">
@@ -1829,6 +1857,60 @@ class PushNotificationService {
   }
 }
 
+
+
+// ==========================================
+// PWA INSTALL LOGIC (A2HS & BeforeInstallPrompt)
+// ==========================================
+let deferredPromptInstall = null;
+
+window.addEventListener('beforeinstallprompt', (e) => {
+  console.log('[PWA] 📥 Evento beforeinstallprompt detectado.');
+  e.preventDefault();
+  deferredPromptInstall = e;
+
+  // Mostrar el botón en el header y el banner flotante
+  const btnHeader = document.getElementById('btn-instalar-header');
+  const banner = document.getElementById('pwa-install-banner');
+
+  if (btnHeader) btnHeader.style.display = 'inline-flex';
+  if (banner) banner.style.display = 'flex';
+});
+
+async function ejecutarInstalacionPWA() {
+  if (deferredPromptInstall) {
+    deferredPromptInstall.prompt();
+    const { outcome } = await deferredPromptInstall.userChoice;
+    console.log('[PWA] Respuesta del usuario a la instalación:', outcome);
+    
+    if (outcome === 'accepted') {
+      const banner = document.getElementById('pwa-install-banner');
+      const btnHeader = document.getElementById('btn-instalar-header');
+      if (banner) banner.style.display = 'none';
+      if (btnHeader) btnHeader.style.display = 'none';
+      mostrarToast('🎉 ¡CivicGuard instalada exitosamente!', 'success');
+    }
+    deferredPromptInstall = null;
+  } else {
+    // Si no está disponible el prompt nativo aún
+    mostrarToast('Para instalar: presiona los 3 puntos del navegador o el icono de descarga 📥 en la barra de URL.', 'info');
+  }
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+  const btnHeader = document.getElementById('btn-instalar-header');
+  const btnInstallBanner = document.getElementById('btn-pwa-install');
+  const btnDismissBanner = document.getElementById('btn-pwa-dismiss');
+  const banner = document.getElementById('pwa-install-banner');
+
+  if (btnHeader) btnHeader.addEventListener('click', ejecutarInstalacionPWA);
+  if (btnInstallBanner) btnInstallBanner.addEventListener('click', ejecutarInstalacionPWA);
+  if (btnDismissBanner && banner) {
+    btnDismissBanner.addEventListener('click', () => {
+      banner.style.display = 'none';
+    });
+  }
+});
 
 // 7. Application Shell Orchestrator
 /**
