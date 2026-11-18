@@ -1,0 +1,21 @@
+{
+  "name": "civicguard-pwa",
+  "version": "1.0.0",
+  "description": "Sistema de Gestión de Emergencias e Incidencias en Infraestructura Urbana - PWA Nivel Empresarial Headless para UTM",
+  "main": "server.js",
+  "type": "module",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node server.js"
+  },
+  "keywords": [
+    "pwa",
+    "service-worker",
+    "offline-first",
+    "indexeddb",
+    "civicguard",
+    "utm"
+  ],
+  "author": "Equipo de Desarrollo - UTM",
+  "license": "MIT"
+}
