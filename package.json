@@ -5,6 +5,7 @@
   "main": "server.js",
   "type": "module",
   "scripts": {
+    "build": "echo 'Static Build OK'",
     "start": "node server.js",
     "dev": "node server.js"
   },

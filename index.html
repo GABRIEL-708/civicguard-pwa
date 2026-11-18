@@ -22,8 +22,7 @@
   <link rel="icon" type="image/png" sizes="192x192" href="./assets/icons/icon-192.png">
   <link rel="apple-touch-icon" href="./assets/icons/icon-192.png">
 
-  <!-- Estilos del Application Shell -->
-  <link rel="stylesheet" href="./css/shell.css">
+  <!-- Estilos del Application Shell Inmutables -->
   <style>
     /**
  * Hoja de Estilos del Application Shell Inmutable
@@ -1964,7 +1963,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 async function registrarServiceWorker() {
   if ('serviceWorker' in navigator) {
     try {
-      const reg = await navigator.serviceWorker.register('/sw.js', { scope: '/' });
+      const reg = await navigator.serviceWorker.register('./sw.js');
       console.log('[App Shell] ✅ Service Worker registrado en scope:', reg.scope);
 
       // Detección de nueva versión
