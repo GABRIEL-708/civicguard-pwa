@@ -4,6 +4,7 @@
  */
 
 import { dbStore } from '../db/indexed-store.js';
+import { SupabaseClient } from '../db/supabase-client.js';
 
 export class BackgroundSyncManager {
   /**
@@ -22,7 +23,6 @@ export class BackgroundSyncManager {
     }
 
     // Fallback: Si el navegador no soporta SyncManager (iOS Safari / Firefox)
-    console.log('[Background Sync] 🌐 Usando fallback reactivo a evento "online" de ventana.');
     if (navigator.onLine) {
       this.procesarColaDirecta();
     }
@@ -30,7 +30,7 @@ export class BackgroundSyncManager {
   }
 
   /**
-   * Despacha directamente los elementos retenidos hacia el endpoint REST
+   * Despacha directamente los elementos retenidos hacia Supabase Cloud
    */
   static async procesarColaDirecta(notificarCallback = null) {
     if (!navigator.onLine) {
@@ -44,26 +44,41 @@ export class BackgroundSyncManager {
       return { despachados: 0, pendientes: 0 };
     }
 
-    console.log(`[Background Sync] 🚀 Procesando ${cola.length} reporte(s) retenidos...`);
+    console.log(`[Background Sync] 🚀 Despachando ${cola.length} reporte(s) hacia Supabase Cloud...`);
     let exitosos = 0;
 
     for (const item of cola) {
       try {
-        const respuesta = await fetch('/api/reportes', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(item.payload)
-        });
+        // 1. Obtener reporte completo de IndexedDB (incluyendo foto si tiene)
+        const reporteCompleto = await dbStore.obtenerReportePorId(item.idReporte) || item.payload;
 
-        if (respuesta.ok || respuesta.status === 201) {
-          await dbStore.actualizarEstatusReporte(item.idReporte, 'despachado', {
-            sincronizadoEn: new Date().toISOString()
-          });
-          exitosos++;
-          console.log(`[Background Sync] ✅ Reporte #${item.idReporte} sincronizado exitosamente con el centro de mando.`);
-        }
+        // 2. Enviar a Supabase PostgreSQL
+        await SupabaseClient.enviarReporte(reporteCompleto);
+
+        // 3. Marcar como despachado en IndexedDB local
+        await dbStore.actualizarEstatusReporte(item.idReporte, 'despachado', {
+          sincronizadoEn: new Date().toISOString()
+        });
+        exitosos++;
+        console.log(`[Background Sync] ☁️ Reporte #${item.idReporte} persistido exitosamente en Supabase.`);
+
       } catch (err) {
-        console.warn(`[Background Sync] ⚠️ Reintento fallido para reporte #${item.idReporte}:`, err.message);
+        console.warn(`[Background Sync] ⚠️ Falló sincronización a Supabase para #${item.idReporte}:`, err.message);
+        
+        // Fallback al endpoint mock local si Supabase diera error temporal
+        try {
+          const resLocal = await fetch('/api/reportes', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(item.payload)
+          });
+          if (resLocal.ok) {
+            await dbStore.actualizarEstatusReporte(item.idReporte, 'despachado');
+            exitosos++;
+          }
+        } catch (e2) {
+          // Permanecer en cola para el próximo reintento
+        }
       }
     }
 

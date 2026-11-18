@@ -20,6 +20,7 @@ const ASSETS_APP_SHELL = [
   '/src/styles/shell.css',
   '/src/app.js',
   '/src/db/indexed-store.js',
+  '/src/db/supabase-client.js',
   '/src/hardware/geolocation.js',
   '/src/hardware/camera.js',
   '/src/sync/background-sync.js',

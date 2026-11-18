@@ -4,6 +4,7 @@
  */
 
 import { dbStore } from './db/indexed-store.js';
+import { SupabaseClient } from './db/supabase-client.js';
 import { GeolocationHardware } from './hardware/geolocation.js';
 import { CameraHardware } from './hardware/camera.js';
 import { BackgroundSyncManager } from './sync/background-sync.js';
