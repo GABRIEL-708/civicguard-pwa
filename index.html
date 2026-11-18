@@ -1494,7 +1494,7 @@ class CameraHardware {
 
     const constraints = {
       video: {
-        facingMode: this.facingMode,
+        facingMode: { ideal: this.facingMode },
         width: { ideal: 1280 },
         height: { ideal: 720 }
       },
@@ -1756,34 +1756,64 @@ class PushNotificationService {
    * @param {Object} opciones 
    */
   static async emitirNotificacion(titulo, opciones = {}) {
+    if (!('Notification' in window)) {
+      throw new Error('Tu navegador no soporta la API de Notificaciones.');
+    }
+
+    if (Notification.permission === 'denied') {
+      throw new Error('Las notificaciones están bloqueadas en tu navegador. Haz clic en el candado 🔒 junto a la URL para permitirlas.');
+    }
+
     if (Notification.permission !== 'granted') {
-      const permiso = await this.solicitarPermiso();
+      const permiso = await Notification.requestPermission();
       if (permiso !== 'granted') {
-        throw new Error('Permiso de notificaciones denegado.');
+        throw new Error('No se concedió el permiso de notificaciones.');
       }
     }
 
+    // Ruta segura absoluta para el icono
+    const iconUrl = new URL('assets/icons/icon-192.png', window.location.href).href;
+    const badgeUrl = new URL('assets/icons/badge-72.png', window.location.href).href;
+
     const opcionesPredeterminadas = {
       body: opciones.body || 'Alerta de Infraestructura Urbana',
-      icon: opciones.icon || '/assets/icons/icon-192.png',
-      badge: '/assets/icons/badge-72.png',
+      icon: iconUrl,
+      badge: badgeUrl,
       vibrate: [200, 100, 200],
-      tag: opciones.tag || 'civicguard-alerta',
+      tag: opciones.tag || 'civicguard-alerta-' + Date.now(),
       renotify: true,
       data: {
-        url: opciones.url || '/',
+        url: window.location.href,
         fecha: new Date().toISOString()
       }
     };
 
+    // Vibración háptica en móvil
+    if ('vibrate' in navigator) {
+      try { navigator.vibrate([200, 100, 200]); } catch(e) {}
+    }
+
+    // Intentar vía Service Worker primero
     if ('serviceWorker' in navigator) {
-      const reg = await navigator.serviceWorker.ready;
-      await reg.showNotification(titulo, opcionesPredeterminadas);
-      console.log('[Notificaciones Push] 📲 Notificación nativa mostrada vía Service Worker.');
-      return true;
-    } else {
+      try {
+        const reg = await navigator.serviceWorker.ready;
+        if (reg && reg.showNotification) {
+          await reg.showNotification(titulo, opcionesPredeterminadas);
+          console.log('[Notificaciones Push] 📲 Notificación emitida vía Service Worker.');
+          return true;
+        }
+      } catch (swErr) {
+        console.warn('[Notificaciones Push] Falló vía SW, intentando Notification directa:', swErr);
+      }
+    }
+
+    // Fallback directo
+    try {
       new Notification(titulo, opcionesPredeterminadas);
       return true;
+    } catch (directErr) {
+      console.error('[Notificaciones Push] Falló Notification directa:', directErr);
+      throw new Error('No se pudo desplegar la notificación del sistema: ' + directErr.message);
     }
   }
 
@@ -2251,6 +2281,42 @@ function configurarCentroControlSync() {
     });
   }
 
+  // Actualizar indicador de permiso
+  const badgePermiso = document.getElementById('badge-permiso-notif');
+  function refrescarBadgePermiso() {
+    if (!badgePermiso) return;
+    const estado = ('Notification' in window) ? Notification.permission : 'no_soportado';
+    if (estado === 'granted') {
+      badgePermiso.innerHTML = '✅ Concedido';
+      badgePermiso.style.color = 'var(--utm-green-light)';
+    } else if (estado === 'denied') {
+      badgePermiso.innerHTML = '❌ Bloqueado';
+      badgePermiso.style.color = 'var(--color-critico)';
+    } else {
+      badgePermiso.innerHTML = '⏳ Pendiente';
+      badgePermiso.style.color = 'var(--status-retenido)';
+    }
+  }
+  refrescarBadgePermiso();
+
+  // Botón para solicitar permisos explícitamente
+  const btnPermiso = document.getElementById('btn-solicitar-permiso-notif');
+  if (btnPermiso) {
+    btnPermiso.addEventListener('click', async () => {
+      try {
+        const resultado = await Notification.requestPermission();
+        refrescarBadgePermiso();
+        if (resultado === 'granted') {
+          mostrarToast('¡Permiso de notificaciones activado con éxito!', 'success');
+        } else {
+          mostrarToast('Permiso denegado. Habilítalo en el candado 🔒 de tu navegador.', 'error');
+        }
+      } catch (e) {
+        mostrarToast(e.message, 'error');
+      }
+    });
+  }
+
   // Notificación Push de Demostración
   const btnPushDemo = document.getElementById('btn-demo-push');
   if (btnPushDemo) {
@@ -2258,8 +2324,9 @@ function configurarCentroControlSync() {
       try {
         await PushNotificationService.simularAlertaResolucion('REP-UTM-002', 'Fuga de agua potable frente al Campus UTM');
         mostrarToast('📲 Alerta push despachada al sistema operativo.', 'success');
+        refrescarBadgePermiso();
       } catch (err) {
-        mostrarToast('Error al emitir notificación: ' + err.message, 'error');
+        mostrarToast(err.message, 'error');
       }
     });
   }
